@@ -5,6 +5,7 @@ import {
   asMonthString,
   currentMonth,
   formatKoreanDate,
+  formatKoreanMonth,
   daysInMonth,
   isLeapYear,
   isValidDateString,
@@ -128,5 +129,12 @@ describe('formatKoreanDate', () => {
     expect(formatKoreanDate(asDateString('2026-10-27'))).toBe('10월 27일 (화)')
     expect(formatKoreanDate(asDateString('2024-02-29'))).toBe('2월 29일 (목)')
     expect(formatKoreanDate(asDateString('2026-01-01'))).toBe('1월 1일 (목)')
+  })
+})
+
+describe('formatKoreanMonth', () => {
+  it('연도와 월을 표시한다', () => {
+    expect(formatKoreanMonth(asMonthString('2026-10'))).toBe('2026년 10월')
+    expect(formatKoreanMonth(asMonthString('2027-01'))).toBe('2027년 1월')
   })
 })

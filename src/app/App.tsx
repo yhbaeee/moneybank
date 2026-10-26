@@ -8,6 +8,7 @@ import { DevComponents } from './DevComponents'
 import { Layout } from './Layout'
 import { LedgerDataProvider } from './LedgerDataProvider'
 import { LedgerProvider } from './LedgerProvider'
+import { SelectedMonthProvider } from './SelectedMonthProvider'
 import { ThemeProvider } from './ThemeProvider'
 import { TransactionEditorProvider } from './TransactionEditorProvider'
 
@@ -17,20 +18,22 @@ export function App() {
       <ToastProvider>
         <LedgerProvider>
           <LedgerDataProvider>
-            <TransactionEditorProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route index element={<HomePage />} />
-                    <Route path="transactions" element={<TransactionsPage />} />
-                    <Route path="categories" element={<CategoriesPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    {import.meta.env.DEV && <Route path="dev/components" element={<DevComponents />} />}
-                    <Route path="*" element={<HomePage />} />
-                  </Route>
-                </Routes>
-              </BrowserRouter>
-            </TransactionEditorProvider>
+            <SelectedMonthProvider>
+              <TransactionEditorProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route element={<Layout />}>
+                      <Route index element={<HomePage />} />
+                      <Route path="transactions" element={<TransactionsPage />} />
+                      <Route path="categories" element={<CategoriesPage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      {import.meta.env.DEV && <Route path="dev/components" element={<DevComponents />} />}
+                      <Route path="*" element={<HomePage />} />
+                    </Route>
+                  </Routes>
+                </BrowserRouter>
+              </TransactionEditorProvider>
+            </SelectedMonthProvider>
           </LedgerDataProvider>
         </LedgerProvider>
       </ToastProvider>

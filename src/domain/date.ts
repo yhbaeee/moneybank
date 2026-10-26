@@ -103,3 +103,9 @@ export function formatKoreanDate(date: DateString): string {
   const day = Number(date.slice(8, 10))
   return `${month}월 ${day}일 (${WEEKDAYS[new Date(year, month - 1, day).getDay()]})`
 }
+
+/** "2026년 10월" */
+export function formatKoreanMonth(month: MonthString): string {
+  const { year, month: m } = parseMonth(month)
+  return `${year}년 ${m}월`
+}

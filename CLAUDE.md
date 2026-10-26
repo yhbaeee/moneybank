@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 4(거래 내역 CRUD) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 5(월별 요약·카테고리 집계) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -39,6 +39,15 @@ tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## 요약·집계 (단계 5)
+
+- 집계는 `domain/summary.ts`(`summarizeMonth`, `aggregateExpensesByCategory`, `transactionsInMonth`)의 순수 함수만 쓴다. 월 경계는 `monthOf(date)` 문자열 비교로만 판정한다.
+- 비율은 **‰(천분율) 정수**로 다룬다. `domain/percent.ts`의 `allocatePermille`(최대잔여법, BigInt, 동률은 금액 큰 쪽→입력 순서 앞쪽)이 합계를 항상 1000으로 맞추고, 표시는 `formatPermille`(33.4%). 비율을 `Math.round`로 직접 계산하지 않는다.
+- 선택 월은 `SelectedMonthProvider`/`useSelectedMonth()`(기본: 로컬 기준 이번 달). 월 이동 UI는 6단계에서 추가. 홈은 선택 월 기준으로 요약·집계·최근 5건을 보여 준다.
+- "오늘"에 의존하는 E2E는 `tests/e2e/helpers.ts`의 `fixToday(page)`(Playwright clock, goto 전에 호출)로 2026-10-27에 고정한다. 단위 테스트는 `vi.useFakeTimers({ toFake: ['Date'] })`.
+- E2E 헬퍼 import는 `./helpers.ts`처럼 확장자를 붙인다(tsconfig nodenext).
+- 토스트는 최신 1개만 표시한다.
 
 ## 거래 UI 흐름 (단계 4)
 

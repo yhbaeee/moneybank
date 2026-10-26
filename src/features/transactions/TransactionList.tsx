@@ -10,6 +10,8 @@ interface TransactionListProps {
   categories: Category[]
   paymentMethods: PaymentMethod[]
   onSelect: (transaction: Transaction) => void
+  /** 날짜 제목의 헤딩 레벨. 페이지 구조에 맞춰 조정한다. */
+  dateHeadingLevel?: 2 | 3
 }
 
 interface DateGroup {
@@ -27,7 +29,14 @@ function groupByDate(transactions: Transaction[]): DateGroup[] {
   return groups
 }
 
-export function TransactionList({ transactions, categories, paymentMethods, onSelect }: TransactionListProps) {
+export function TransactionList({
+  transactions,
+  categories,
+  paymentMethods,
+  onSelect,
+  dateHeadingLevel = 2,
+}: TransactionListProps) {
+  const DateHeading = dateHeadingLevel === 3 ? 'h3' : 'h2'
   const groups = useMemo(() => groupByDate(transactions), [transactions])
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
   const paymentById = useMemo(() => new Map(paymentMethods.map((p) => [p.id, p])), [paymentMethods])
@@ -36,7 +45,7 @@ export function TransactionList({ transactions, categories, paymentMethods, onSe
     <div className="flex flex-col gap-4">
       {groups.map((group) => (
         <section key={group.date} aria-label={formatKoreanDate(group.date)}>
-          <h2 className="mb-1 text-sm font-medium text-muted">{formatKoreanDate(group.date)}</h2>
+          <DateHeading className="mb-1 text-sm font-medium text-muted">{formatKoreanDate(group.date)}</DateHeading>
           <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
             {group.items.map((transaction) => {
               const category = categoryById.get(transaction.categoryId)

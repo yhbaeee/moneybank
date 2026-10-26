@@ -21,7 +21,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((message: string, tone: ToastTone = 'info') => {
     const id = nextId.current++
-    setToasts((prev) => [...prev, { id, message, tone }])
+    // 연속 저장 시 알림이 쌓여 화면을 가리지 않도록 최신 알림 하나만 보여 준다.
+    setToasts([{ id, message, tone }])
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), TOAST_DURATION_MS)
   }, [])
 
