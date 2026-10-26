@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 3(데이터 모델·저장소 계층) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 4(거래 내역 CRUD) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -39,6 +39,15 @@ tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## 거래 UI 흐름 (단계 4)
+
+- Provider 중첩 순서: Theme → Toast → `LedgerProvider`(저장소 init) → `LedgerDataProvider`(메모리 스냅샷 + 변경 후 재조회) → `TransactionEditorProvider`(등록/수정 폼과 삭제 확인 모달 한 곳에서 관리) → Router. 화면은 `useLedgerData()`로 읽고 `useTransactionEditor().openCreate/openEdit`으로 폼을 연다.
+- 폼 변환·검증은 `features/transactions/formModel.ts`(순수 함수): 폼 값은 전부 문자열 → `toTransactionInput` → `TransactionInput`. 금액 입력은 입력 중에는 그대로 두고 blur 때 쉼표 정리.
+- 수입/지출은 `formatSignedWon`으로 `+`/`-` 부호를 병행 표기한다(색상만 의존 금지).
+- "내역 추가" 진입점: 데스크톱은 페이지 헤더 버튼, 모바일은 FAB(`aria-label="내역 추가"`). 두 개가 동시에 보이면 안 된다(E2E의 `getByRole('button', {name:'내역 추가'})`가 strict mode로 깨진다).
+- `Button`은 `inline-flex`를 기본으로 가지므로 `hidden`/`md:inline-flex`를 같은 요소에 붙이지 말고 감싸는 `div`에서 숨긴다.
+- E2E 헬퍼는 `tests/e2e/transactions.spec.ts`의 `addTransaction`/`fillForm`을 참고. 날짜는 항상 명시(오늘 날짜에 의존하지 않는다).
 
 ## 데이터·저장소 (단계 3)
 

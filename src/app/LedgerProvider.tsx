@@ -1,20 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ledgerRepository } from '../storage'
-import { StorageCorruptedError, StorageUnavailableError } from '../storage/errors'
 import type { LedgerRepository } from '../storage/repository'
+import { describeError } from './describeError'
 import { LedgerContext } from './ledgerContext'
 
 type Status = { kind: 'loading' } | { kind: 'ready' } | { kind: 'error'; error: unknown }
-
-function describeError(error: unknown): string {
-  if (error instanceof StorageCorruptedError) {
-    return '저장된 데이터가 손상되어 읽을 수 없습니다. 기존 데이터는 지우지 않고 그대로 두었습니다.'
-  }
-  if (error instanceof StorageUnavailableError) {
-    return '브라우저 저장소를 사용할 수 없습니다. 시크릿 모드이거나 사이트 데이터가 차단되어 있는지 확인해 주세요.'
-  }
-  return '데이터를 불러오는 중 문제가 발생했습니다.'
-}
 
 interface LedgerProviderProps {
   children: ReactNode

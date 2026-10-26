@@ -4,6 +4,7 @@ import {
   asDateString,
   asMonthString,
   currentMonth,
+  formatKoreanDate,
   daysInMonth,
   isLeapYear,
   isValidDateString,
@@ -119,5 +120,13 @@ describe('addMonths', () => {
   it('지원 범위를 벗어나면 오류를 던진다', () => {
     expect(() => addMonths(asMonthString('2999-12'), 1)).toThrow(RangeError)
     expect(() => addMonths(asMonthString('1900-01'), -1)).toThrow(RangeError)
+  })
+})
+
+describe('formatKoreanDate', () => {
+  it('월, 일, 요일을 표시한다', () => {
+    expect(formatKoreanDate(asDateString('2026-10-27'))).toBe('10월 27일 (화)')
+    expect(formatKoreanDate(asDateString('2024-02-29'))).toBe('2월 29일 (목)')
+    expect(formatKoreanDate(asDateString('2026-01-01'))).toBe('1월 1일 (목)')
   })
 })

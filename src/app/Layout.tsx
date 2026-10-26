@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useTransactionEditor } from './transactionEditorContext'
 
 interface NavItem {
   to: string
@@ -21,8 +22,12 @@ function useIsActive() {
   }
 }
 
+const FAB_PATHS = ['/', '/transactions']
+
 export function Layout() {
   const isActive = useIsActive()
+  const { pathname } = useLocation()
+  const { openCreate } = useTransactionEditor()
 
   return (
     <div className="min-h-dvh bg-bg text-fg">
@@ -49,6 +54,17 @@ export function Layout() {
       <main className="mx-auto max-w-5xl px-4 pb-24 pt-4 md:pb-8">
         <Outlet />
       </main>
+
+      {FAB_PATHS.includes(pathname) && (
+        <button
+          type="button"
+          aria-label="내역 추가"
+          onClick={openCreate}
+          className="fixed bottom-20 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-3xl text-primary-fg shadow-lg md:hidden"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+      )}
 
       <nav
         aria-label="주 메뉴"

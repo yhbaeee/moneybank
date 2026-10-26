@@ -93,3 +93,13 @@ export function monthEnd(month: MonthString): DateString {
   const { year, month: m } = parseMonth(month)
   return asDateString(`${month}-${pad(daysInMonth(year, m), 2)}`)
 }
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
+
+/** "10월 27일 (화)". 요일은 로컬 Date 생성자로 계산한다(UTC 해석 없음). */
+export function formatKoreanDate(date: DateString): string {
+  const year = Number(date.slice(0, 4))
+  const month = Number(date.slice(5, 7))
+  const day = Number(date.slice(8, 10))
+  return `${month}월 ${day}일 (${WEEKDAYS[new Date(year, month - 1, day).getDay()]})`
+}

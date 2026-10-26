@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_AMOUNT, formatWon, isValidAmount, parseAmountInput, sumAmounts } from './money'
+import { MAX_AMOUNT, formatAmountDigits, formatSignedWon, formatWon, isValidAmount, parseAmountInput, sumAmounts } from './money'
 
 describe('parseAmountInput', () => {
   it.each([
@@ -65,5 +65,16 @@ describe('sumAmounts', () => {
   it('정수가 아닌 값이나 안전 범위 초과는 오류를 던진다', () => {
     expect(() => sumAmounts([1.5])).toThrow(RangeError)
     expect(() => sumAmounts([Number.MAX_SAFE_INTEGER, 1])).toThrow(RangeError)
+  })
+})
+
+describe('formatAmountDigits / formatSignedWon', () => {
+  it('쉼표 구분 숫자를 만든다', () => {
+    expect(formatAmountDigits(1234567)).toBe('1,234,567')
+  })
+
+  it('수입은 +, 지출은 - 부호를 붙인다', () => {
+    expect(formatSignedWon(12000, 'expense')).toBe('-12,000원')
+    expect(formatSignedWon(3000000, 'income')).toBe('+3,000,000원')
   })
 })

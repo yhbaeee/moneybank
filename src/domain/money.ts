@@ -39,6 +39,16 @@ export function formatWon(value: number): string {
   return `${wonFormat.format(value)}원`
 }
 
+/** 입력창에 채울 쉼표 구분 숫자(원 표기 없음). 12000 → "12,000" */
+export function formatAmountDigits(value: number): string {
+  return wonFormat.format(value)
+}
+
+/** 수입은 "+", 지출은 "-"를 붙인 표기. 색상에만 의존하지 않기 위한 부호 병행 표기. */
+export function formatSignedWon(amount: number, type: 'expense' | 'income'): string {
+  return `${type === 'income' ? '+' : '-'}${formatWon(amount)}`
+}
+
 /** 정수 금액의 합계. 정수가 아니거나 안전 범위를 넘으면 오류를 던진다. */
 export function sumAmounts(values: readonly number[]): number {
   let total = 0
