@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 2(디자인 시스템·레이아웃) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 3(데이터 모델·저장소 계층) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -27,18 +27,28 @@ npm run test         # Vitest (단일 파일: npx vitest run src/domain/money.te
 npm run test:e2e     # Playwright, desktop+mobile(Pixel 7) 프로젝트, dev 서버 자동 기동 (단일 파일: npx playwright test tests/e2e/x.spec.ts, 디버그: --ui)
 ```
 
-## 아키텍처 (계획 — 단계 3~에서 생성)
+## 아키텍처
 
 ```
 src/app/        라우팅, 프로바이더, 레이아웃
 src/components/ 공통 UI
 src/features/   transactions | summary | categories | settings (화면 단위 기능)
 src/domain/     타입, 순수 함수(금액·날짜·집계·필터)  ← React/저장소에 의존 금지
-src/storage/    Repository 인터페이스 + localStorage 구현 + 마이그레이션 + 백업 검증
+src/storage/    Repository 인터페이스 + localStorage 구현 + 마이그레이션 + 스키마 검증 + 백업
 tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## 데이터·저장소 (단계 3)
+
+- 타입은 `domain/types.ts`. `DateString`/`MonthString`은 브랜드 타입이라 `date.ts`의 `asDateString`/`toDateString` 등으로만 만든다. `TransactionInput.date`는 검증 전이라 일반 문자열.
+- 저장 문서 전체(`LedgerData`)를 localStorage 키 `ledger.data` 하나에 저장한다(테마는 별도 키 `ledger.theme`, 기기 설정이라 백업 대상 아님). 백업 파일 = `LedgerData` + `exportedAt`.
+- 저장소 API는 전부 `Promise`. UI는 `useLedger()`(LedgerProvider)로만 접근한다. 저장소 교체 지점은 `src/storage/index.ts` 한 줄.
+- 데이터 검증은 `storage/schema.ts`(참조 무결성 포함), 스키마 변경 시 `CURRENT_SCHEMA_VERSION`을 올리고 `migrations.ts`에 이전 버전 변환을 추가한다.
+- 저장소 오류는 `storage/errors.ts`의 클래스(`StorageCorruptedError` 등)로 구분한다. 손상된 데이터는 **절대 덮어쓰지 않는다**.
+- 카테고리 규칙(중복 이름, 보호된 '기타', 사용 중 삭제 시 재배정)은 저장소 계층에서 강제한다. 거래 입력 검증은 `domain/validation.ts`(폼과 저장소가 공유).
+- 날짜 단위 테스트는 로컬 생성자(`new Date(y, m, d)`)로 만들어 TZ와 무관해야 한다. 확인: `TZ=America/Los_Angeles npx vitest run`.
 
 ## UI 기반 (단계 2)
 
