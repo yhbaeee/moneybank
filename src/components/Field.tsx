@@ -15,7 +15,7 @@ function FieldFrame({ id, label, hint, error, children }: FieldFrameProps) {
         {label}
       </label>
       {children}
-      {hint && !error && (
+      {hint && (
         <p id={`${id}-hint`} className="text-xs text-muted">
           {hint}
         </p>
@@ -32,9 +32,10 @@ function FieldFrame({ id, label, hint, error, children }: FieldFrameProps) {
 const CONTROL_CLASS =
   'min-h-11 w-full rounded-lg border bg-surface px-3 text-base text-fg placeholder:text-muted'
 
+/** 오류와 안내문을 모두 입력창 설명에 연결한다(오류를 먼저 읽는다). */
 function describedBy(id: string, hint?: string, error?: string) {
-  if (error) return `${id}-error`
-  return hint ? `${id}-hint` : undefined
+  const ids = [error && `${id}-error`, hint && `${id}-hint`].filter(Boolean)
+  return ids.length > 0 ? ids.join(' ') : undefined
 }
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {

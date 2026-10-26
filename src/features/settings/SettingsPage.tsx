@@ -25,7 +25,7 @@ export function SettingsPage() {
             </option>
           ))}
         </Select>
-        <Link to="/categories" className="text-sm font-medium text-primary underline">
+        <Link to="/categories" className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline">
           카테고리 관리
         </Link>
       </Card>

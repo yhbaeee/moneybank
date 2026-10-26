@@ -8,7 +8,7 @@ export function CategoriesPage() {
         <h1 id="categories-title" className="text-xl font-bold">
           카테고리 관리
         </h1>
-        <Link to="/settings" className="text-sm text-primary underline">
+        <Link to="/settings" className="inline-flex min-h-11 items-center text-sm text-primary underline">
           설정으로 돌아가기
         </Link>
       </div>

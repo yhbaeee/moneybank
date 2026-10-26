@@ -66,7 +66,7 @@ export function HomePage() {
           <h2 id="recent-title" className="text-lg font-bold">
             최근 내역
           </h2>
-          <Link to="/transactions" className="text-sm font-medium text-primary underline">
+          <Link to="/transactions" className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline">
             전체 보기
           </Link>
         </div>

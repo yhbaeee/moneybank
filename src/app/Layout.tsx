@@ -1,4 +1,7 @@
+import { useEffect, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { focusPageHeading } from './focus'
+import { documentTitleFor } from './routeMeta'
 import { useTransactionEditor } from './transactionEditorContext'
 
 interface NavItem {
@@ -28,9 +31,30 @@ export function Layout() {
   const isActive = useIsActive()
   const { pathname } = useLocation()
   const { openCreate } = useTransactionEditor()
+  const mainRef = useRef<HTMLElement>(null)
+  const previousPath = useRef(pathname)
+
+  // 화면마다 문서 제목을 바꾸고, 화면을 이동했을 때(처음 열 때는 제외) 페이지 제목으로 포커스를 옮긴다.
+  useEffect(() => {
+    document.title = documentTitleFor(pathname)
+    if (previousPath.current !== pathname) {
+      previousPath.current = pathname
+      focusPageHeading()
+    }
+  }, [pathname])
 
   return (
     <div className="min-h-dvh bg-bg text-fg">
+      <a
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault()
+          mainRef.current?.focus()
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:text-primary-fg"
+      >
+        본문으로 건너뛰기
+      </a>
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <span className="text-lg font-bold">가계부</span>
@@ -51,7 +75,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 pb-24 pt-4 md:pb-8">
+      <main id="main-content" ref={mainRef} tabIndex={-1} className="mx-auto max-w-5xl px-4 pb-24 pt-4 outline-none md:pb-8">
         <Outlet />
       </main>
 

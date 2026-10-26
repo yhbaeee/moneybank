@@ -74,11 +74,42 @@ describe('ConfirmDialog', () => {
   })
 })
 
+describe('Input 설명 연결', () => {
+  it('안내문과 오류가 모두 있으면 둘 다 입력창 설명에 연결한다(오류 먼저)', () => {
+    render(<Input label="금액" hint="원 단위 정수" error="금액을 입력해 주세요" />)
+    const input = screen.getByLabelText('금액')
+    expect(input).toHaveAccessibleDescription('금액을 입력해 주세요 원 단위 정수')
+    expect(screen.getByText('원 단위 정수')).toBeVisible()
+  })
+
+  it('안내문만 있으면 안내문이 설명이다', () => {
+    render(<Input label="금액" hint="원 단위 정수" />)
+    expect(screen.getByLabelText('금액')).toHaveAccessibleDescription('원 단위 정수')
+    expect(screen.getByLabelText('금액')).not.toHaveAttribute('aria-invalid')
+  })
+})
+
 describe('Toast', () => {
   function Trigger() {
     const { showToast } = useToast()
     return <button onClick={() => showToast('저장했습니다')}>알림</button>
   }
+
+  function ErrorTrigger() {
+    const { showToast } = useToast()
+    return <button onClick={() => showToast('저장하지 못했습니다', 'error')}>실패</button>
+  }
+
+  it('오류 알림은 role=alert로 즉시 읽히게 한다', async () => {
+    const user = userEvent.setup()
+    render(
+      <ToastProvider>
+        <ErrorTrigger />
+      </ToastProvider>,
+    )
+    await user.click(screen.getByRole('button', { name: '실패' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('저장하지 못했습니다')
+  })
 
   it('알림 메시지를 status 영역에 표시한다', async () => {
     const user = userEvent.setup()

@@ -136,8 +136,9 @@ export function TrendChart({ data, selectedMonth }: TrendChartProps) {
       </svg>
 
       <details>
-        <summary className="cursor-pointer text-sm font-medium text-primary underline">표로 보기</summary>
-        <div className="mt-2 overflow-x-auto">
+        <summary className="flex min-h-11 w-fit cursor-pointer items-center text-sm font-medium text-primary underline">표로 보기</summary>
+        {/* 좁은 화면에서 표가 가로로 넘칠 수 있으므로 키보드로 스크롤할 수 있게 포커스 가능한 영역으로 둔다. */}
+        <div role="region" aria-label="월별 수입·지출 표" tabIndex={0} className="mt-2 overflow-x-auto">
           <table className="w-full text-right text-sm tabular-nums">
             <caption className="sr-only">최근 6개월 수입·지출</caption>
             <thead>

@@ -39,6 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
+            role={toast.tone === 'error' ? 'alert' : undefined}
             className={`pointer-events-auto rounded-lg border bg-surface px-4 py-2 text-sm shadow-lg ${TONE_CLASS[toast.tone]}`}
           >
             {toast.message}

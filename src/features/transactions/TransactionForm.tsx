@@ -152,6 +152,7 @@ function TransactionFormBody({ transaction, onClose, onRequestDelete }: BodyProp
 
       <Input
         label="금액"
+        required
         inputMode="numeric"
         autoComplete="off"
         placeholder="0"
@@ -163,6 +164,7 @@ function TransactionFormBody({ transaction, onClose, onRequestDelete }: BodyProp
       />
       <Input
         label="날짜"
+        required
         type="date"
         value={values.date}
         error={errors.date}
@@ -170,6 +172,7 @@ function TransactionFormBody({ transaction, onClose, onRequestDelete }: BodyProp
       />
       <Select
         label="카테고리"
+        required
         value={values.categoryId}
         error={errors.categoryId}
         onChange={(e) => setField('categoryId', e.target.value)}
@@ -182,6 +185,7 @@ function TransactionFormBody({ transaction, onClose, onRequestDelete }: BodyProp
       </Select>
       <Select
         label="결제수단"
+        required
         value={values.paymentMethodId}
         error={errors.paymentMethodId}
         onChange={(e) => setField('paymentMethodId', e.target.value)}

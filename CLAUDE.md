@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 7(차트) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 8(반응형·접근성) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -39,6 +39,15 @@ tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## 접근성 (단계 8)
+
+- 목표는 WCAG 2.1 AA. `tests/e2e/a11y.spec.ts`는 모든 화면·상태를 라이트/다크 × desktop/mobile로 axe(`wcag2a`,`wcag2aa`,`wcag21a`,`wcag21aa`) 검사해 위반 0건을 요구한다. **새 화면·모달·상태를 추가하면 이 파일에 검사 케이스를 추가한다.** axe가 못 잡는 동작(키보드·포커스·리플로우·대상 크기)은 `a11y-behavior.spec.ts`. 실행: `npx playwright test tests/e2e/a11y.spec.ts tests/e2e/a11y-behavior.spec.ts`.
+- 화면(라우트)을 추가하면 `src/app/routeMeta.ts`의 `PAGE_TITLES`에 제목을 등록한다(문서 제목 `"내역 · 가계부"`). 화면 이동 시 `Layout`이 `main h1`로 포커스를 옮기므로 **모든 화면은 `<main>` 안에 h1이 정확히 하나** 있어야 한다. 첫 로드에서는 포커스를 옮기지 않는다(StrictMode 이중 실행에 안전하도록 이전 경로 ref로 비교).
+- "본문으로 건너뛰기" 링크와 `main#main-content`(tabIndex -1)는 `Layout`이 담당. 폼을 닫은 뒤 포커스가 body로 떨어지면(예: 삭제) `TransactionEditorProvider`가 h1로 복구한다.
+- 폼: 필수 항목은 `required`(+선택 항목은 힌트에 "선택 입력"), 오류와 힌트는 모두 `aria-describedby`로 연결(오류 먼저), 오류 토스트는 `role="alert"`.
+- 조작 대상(링크·summary 포함)은 최소 24×24px(권장 `min-h-11`). 가로로 넘칠 수 있는 영역은 `role="region"` + `tabIndex={0}` + 라벨. 최소 지원 폭 320px(가로 스크롤 금지). `prefers-reduced-motion`은 `index.css`에서 전역 처리.
+- 아직 점검하지 못한 것: 실제 스크린리더, 200% 확대. 정리는 `docs/ISSUES.md` 하단.
 
 ## 차트 (단계 7)
 
