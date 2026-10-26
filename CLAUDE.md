@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 5(월별 요약·카테고리 집계) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 6(필터·검색·월 이동) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -39,6 +39,16 @@ tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## 월 이동·검색·필터 (단계 6)
+
+- 선택 월(`useSelectedMonth`)과 내역 화면의 필터 상태는 **메모리에만** 있다(새로고침하면 이번 달·필터 없음). 내역 목록은 선택 월 기준이며 필터는 월을 이동해도 유지된다. URL 쿼리로 옮기는 것은 향후 과제.
+- 필터/검색 로직은 `domain/filter.ts`(순수 함수). 필터끼리 AND, 검색은 공백으로 나눈 단어가 모두 (메모·태그·카테고리명)에 부분 일치(대소문자 무시, NFC 정규화, 앞의 `#` 무시). 태그 필터는 대소문자 무시 완전 일치. 유형을 바꾸면 맞지 않는 카테고리 선택은 해제한다.
+- 월 이동은 `components/MonthNavigator`(범위 1900~2999년, `safeAddMonths`). 홈과 내역이 같은 선택 월을 공유한다.
+- 등록 폼 날짜 기본값은 `defaultEntryDate`(이번 달 보는 중이면 오늘, 아니면 보는 달 1일). 다른 달로 저장하면 토스트에 기록된 달을 알려 준다.
+- 모바일 필터는 "필터" 버튼으로 접힘(`aria-expanded`), 데스크톱은 항상 펼침. 같은 label(`카테고리`/`결제수단`/`태그`)이 등록 폼에도 있으므로 E2E는 `filterBar(page)`(`region` "내역 필터")나 dialog로 범위를 좁힌다. 모바일에서 필터 입력 전에는 `openFilterPanel(page)`.
+- 목록이 월 기준이라 "오늘"에 의존하는 모든 테스트(jsdom·E2E)는 날짜를 고정해야 한다. 많은 데이터가 필요하면 E2E에서 `seedTransactions(page, [...])`(localStorage 직접 주입 후 reload)를 쓴다.
+- `setFixedTime`은 시간을 흘려보내지 않으므로 모든 `createdAt`이 같아진다. 같은 날짜 내역의 순서(최근 생성순)에 의존하는 단언은 쓰지 않는다.
 
 ## 요약·집계 (단계 5)
 

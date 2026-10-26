@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../app/App'
 
 /** 실제 저장소(localStorage)까지 연결한 화면 단위 흐름 테스트 */
@@ -35,13 +35,20 @@ async function fillAndSave(
 
 beforeEach(() => {
   localStorage.clear()
+  // 목록은 선택한 월(기본: 이번 달) 기준이므로 오늘을 2026-10-27로 고정한다.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 9, 27, 12))
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('내역 등록·수정·삭제 흐름', () => {
   it('지출을 등록하면 목록에 표시되고 모달이 닫힌다', async () => {
     const user = userEvent.setup()
     await openTransactions()
-    expect(screen.getByText('아직 내역이 없습니다')).toBeInTheDocument()
+    expect(screen.getByText('이 달의 내역이 없습니다')).toBeInTheDocument()
 
     const dialog = await openCreateForm(user)
     await fillAndSave(user, dialog, { amount: '12000', date: '2026-10-27', category: '식비', memo: '점심', tags: '외식' })
@@ -82,7 +89,7 @@ describe('내역 등록·수정·삭제 흐름', () => {
     expect(input).toHaveFocus()
     expect(within(dialog).getByRole('alert')).toHaveTextContent(message)
     expect(screen.getByRole('dialog', { name: '내역 추가' })).toBeInTheDocument()
-    expect(screen.getByText('아직 내역이 없습니다')).toBeInTheDocument()
+    expect(screen.getByText('이 달의 내역이 없습니다')).toBeInTheDocument()
   })
 
   it('입력을 고치면 해당 필드의 오류가 사라진다', async () => {
@@ -136,7 +143,7 @@ describe('내역 등록·수정·삭제 흐름', () => {
       within(screen.getByRole('dialog', { name: '내역을 삭제할까요?' })).getByRole('button', { name: '삭제' }),
     )
 
-    expect(await screen.findByText('아직 내역이 없습니다')).toBeInTheDocument()
+    expect(await screen.findByText('이 달의 내역이 없습니다')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

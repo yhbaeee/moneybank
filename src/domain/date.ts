@@ -109,3 +109,17 @@ export function formatKoreanMonth(month: MonthString): string {
   const { year, month: m } = parseMonth(month)
   return `${year}년 ${m}월`
 }
+
+/** 월 이동. 지원 범위(1900~2999년)를 벗어나면 예외 대신 null을 돌려준다. */
+export function safeAddMonths(month: MonthString, delta: number): MonthString | null {
+  try {
+    return addMonths(month, delta)
+  } catch {
+    return null
+  }
+}
+
+/** 등록 폼의 날짜 기본값. 보고 있는 달이 이번 달이면 오늘, 아니면 그 달의 1일. */
+export function defaultEntryDate(month: MonthString, today: DateString): DateString {
+  return monthOf(today) === month ? today : monthStart(month)
+}

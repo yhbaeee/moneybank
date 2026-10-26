@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { asDateString, asMonthString } from './date'
 import { createSeedData } from './defaults'
-import { aggregateExpensesByCategory, summarizeMonth, transactionsInMonth, UNKNOWN_CATEGORY_NAME } from './summary'
+import { aggregateExpensesByCategory, summarizeMonth, summarizeTransactions, transactionsInMonth, UNKNOWN_CATEGORY_NAME } from './summary'
 import type { Transaction } from './types'
 
 const { categories } = createSeedData()
@@ -118,5 +118,16 @@ describe('aggregateExpensesByCategory', () => {
   it('지출이 없으면 빈 배열이다', () => {
     expect(aggregateExpensesByCategory([], categories, OCT)).toEqual([])
     expect(aggregateExpensesByCategory([tx({ type: 'income', categoryId: 'cat-income-1' })], categories, OCT)).toEqual([])
+  })
+})
+
+describe('summarizeTransactions', () => {
+  it('월과 관계없이 주어진 거래 전체를 합산한다', () => {
+    const list = [
+      tx({ type: 'income', categoryId: 'cat-income-1', amount: 1000, date: asDateString('2026-09-01') }),
+      tx({ amount: 300, date: asDateString('2026-11-01') }),
+    ]
+    expect(summarizeTransactions(list)).toEqual({ income: 1000, expense: 300, balance: 700, count: 2 })
+    expect(summarizeTransactions([])).toEqual({ income: 0, expense: 0, balance: 0, count: 0 })
   })
 })

@@ -29,11 +29,15 @@ export function transactionsInMonth(transactions: readonly Transaction[], month:
   return transactions.filter((transaction) => monthOf(transaction.date) === month)
 }
 
+/** 주어진 거래 전체의 합계(월 필터 없음). 검색·필터 결과 요약에도 쓴다. */
+export function summarizeTransactions(transactions: readonly Transaction[]): MonthSummary {
+  const income = sumAmounts(transactions.filter((t) => t.type === 'income').map((t) => t.amount))
+  const expense = sumAmounts(transactions.filter((t) => t.type === 'expense').map((t) => t.amount))
+  return { income, expense, balance: income - expense, count: transactions.length }
+}
+
 export function summarizeMonth(transactions: readonly Transaction[], month: MonthString): MonthSummary {
-  const inMonth = transactionsInMonth(transactions, month)
-  const income = sumAmounts(inMonth.filter((t) => t.type === 'income').map((t) => t.amount))
-  const expense = sumAmounts(inMonth.filter((t) => t.type === 'expense').map((t) => t.amount))
-  return { income, expense, balance: income - expense, count: inMonth.length }
+  return summarizeTransactions(transactionsInMonth(transactions, month))
 }
 
 /**

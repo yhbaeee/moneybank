@@ -5,7 +5,7 @@ import { useSelectedMonth } from '../../app/selectedMonthContext'
 import { useTransactionEditor } from '../../app/transactionEditorContext'
 import { Button } from '../../components/Button'
 import { EmptyState } from '../../components/EmptyState'
-import { formatKoreanMonth } from '../../domain/date'
+import { MonthNavigator } from '../../components/MonthNavigator'
 import { aggregateExpensesByCategory, summarizeMonth, transactionsInMonth } from '../../domain/summary'
 import { TransactionList } from '../transactions/TransactionList'
 import { CategoryBreakdown } from './CategoryBreakdown'
@@ -15,7 +15,7 @@ const RECENT_COUNT = 5
 
 export function HomePage() {
   const { transactions, categories, paymentMethods } = useLedgerData()
-  const { month } = useSelectedMonth()
+  const { month, setMonth } = useSelectedMonth()
   const { openCreate, openEdit } = useTransactionEditor()
 
   const summary = useMemo(() => summarizeMonth(transactions, month), [transactions, month])
@@ -31,17 +31,16 @@ export function HomePage() {
   return (
     <section aria-labelledby="home-title" className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 id="home-title" className="text-xl font-bold">
-            홈
-          </h1>
-          <p className="text-sm text-muted">{formatKoreanMonth(month)}</p>
-        </div>
+        <h1 id="home-title" className="text-xl font-bold">
+          홈
+        </h1>
         {/* 모바일에서는 하단의 떠 있는 버튼(FAB)을 쓰므로 데스크톱에서만 보인다. */}
         <div className="hidden md:block">
           <Button onClick={openCreate}>내역 추가</Button>
         </div>
       </div>
+
+      <MonthNavigator month={month} onChange={setMonth} />
 
       <SummaryCards summary={summary} />
 

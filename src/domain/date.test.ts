@@ -7,6 +7,8 @@ import {
   formatKoreanDate,
   formatKoreanMonth,
   daysInMonth,
+  defaultEntryDate,
+  safeAddMonths,
   isLeapYear,
   isValidDateString,
   isValidMonthString,
@@ -136,5 +138,31 @@ describe('formatKoreanMonth', () => {
   it('연도와 월을 표시한다', () => {
     expect(formatKoreanMonth(asMonthString('2026-10'))).toBe('2026년 10월')
     expect(formatKoreanMonth(asMonthString('2027-01'))).toBe('2027년 1월')
+  })
+})
+
+describe('safeAddMonths', () => {
+  it('범위 안이면 addMonths와 같다', () => {
+    expect(safeAddMonths(asMonthString('2026-12'), 1)).toBe('2027-01')
+    expect(safeAddMonths(asMonthString('2026-01'), -1)).toBe('2025-12')
+  })
+
+  it('지원 범위 끝에서는 null을 돌려준다', () => {
+    expect(safeAddMonths(asMonthString('2999-12'), 1)).toBeNull()
+    expect(safeAddMonths(asMonthString('1900-01'), -1)).toBeNull()
+    expect(safeAddMonths(asMonthString('2999-11'), 1)).toBe('2999-12')
+  })
+})
+
+describe('defaultEntryDate', () => {
+  const today = asDateString('2026-10-27')
+
+  it('이번 달을 보고 있으면 오늘이다', () => {
+    expect(defaultEntryDate(asMonthString('2026-10'), today)).toBe('2026-10-27')
+  })
+
+  it('다른 달을 보고 있으면 그 달의 1일이다', () => {
+    expect(defaultEntryDate(asMonthString('2026-09'), today)).toBe('2026-09-01')
+    expect(defaultEntryDate(asMonthString('2027-01'), today)).toBe('2027-01-01')
   })
 })

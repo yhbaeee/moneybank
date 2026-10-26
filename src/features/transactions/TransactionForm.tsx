@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLedgerData } from '../../app/ledgerDataContext'
+import { useSelectedMonth } from '../../app/selectedMonthContext'
 import { Button } from '../../components/Button'
 import { Input, Select } from '../../components/Field'
 import { Modal } from '../../components/Modal'
 import { useToast } from '../../components/toastContext'
-import { todayString } from '../../domain/date'
+import { asDateString, defaultEntryDate, formatKoreanMonth, monthOf, todayString } from '../../domain/date'
 import { formatAmountDigits, parseAmountInput } from '../../domain/money'
 import type { Transaction, TransactionType } from '../../domain/types'
 import { ValidationError } from '../../storage/errors'
@@ -55,11 +56,12 @@ type BodyProps = Omit<TransactionFormProps, 'open'>
 function TransactionFormBody({ transaction, onClose, onRequestDelete }: BodyProps) {
   const { categories, paymentMethods, createTransaction, updateTransaction } = useLedgerData()
   const { showToast } = useToast()
+  const { month } = useSelectedMonth()
 
   const [values, setValues] = useState<TransactionFormValues>(() =>
     transaction
       ? formValuesFromTransaction(transaction)
-      : createEmptyFormValues(categories, paymentMethods, todayString()),
+      : createEmptyFormValues(categories, paymentMethods, defaultEntryDate(month, todayString())),
   )
   const [errors, setErrors] = useState<TransactionFormErrors>({})
   const [submitting, setSubmitting] = useState(false)
@@ -100,7 +102,12 @@ function TransactionFormBody({ transaction, onClose, onRequestDelete }: BodyProp
     try {
       if (transaction) await updateTransaction(transaction.id, result.input)
       else await createTransaction(result.input)
-      showToast('저장했습니다', 'success')
+      // 보고 있는 달이 아닌 날짜로 저장하면 목록에서 바로 보이지 않으므로 어느 달에 기록됐는지 알려 준다.
+      const savedMonth = monthOf(asDateString(result.input.date))
+      showToast(
+        savedMonth === month ? '저장했습니다' : `저장했습니다 (${formatKoreanMonth(savedMonth)}에 기록됨)`,
+        'success',
+      )
       onClose()
     } catch (error) {
       if (error instanceof ValidationError) {

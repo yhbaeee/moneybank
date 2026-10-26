@@ -1,10 +1,15 @@
 import { expect, test } from '@playwright/test'
-import { addTransaction, fillForm, openList } from './helpers.ts'
+import { addTransaction, fillForm, fixToday, openList } from './helpers.ts'
+
+// 목록은 선택한 월(기본: 이번 달) 기준이므로 오늘을 2026-10-27로 고정한다.
+test.beforeEach(async ({ page }) => {
+  await fixToday(page)
+})
 
 test.describe('내역 등록', () => {
   test('지출 내역을 추가할 수 있다', async ({ page }) => {
     await openList(page)
-    await expect(page.getByText('아직 내역이 없습니다')).toBeVisible()
+    await expect(page.getByText('이 달의 내역이 없습니다')).toBeVisible()
 
     await page.getByRole('button', { name: '내역 추가' }).click()
     const dialog = await fillForm(page, {
@@ -73,7 +78,7 @@ test.describe('입력값 검증', () => {
       await expect(dialog).toBeVisible()
 
       await dialog.getByRole('button', { name: '취소' }).click()
-      await expect(page.getByText('아직 내역이 없습니다')).toBeVisible()
+      await expect(page.getByText('이 달의 내역이 없습니다')).toBeVisible()
     })
   }
 
@@ -156,7 +161,7 @@ test.describe('수정과 삭제', () => {
     await page.getByRole('button', { name: /간식/ }).click()
     await page.getByRole('dialog', { name: '내역 수정' }).getByRole('button', { name: '삭제' }).click()
     await page.getByRole('dialog', { name: '내역을 삭제할까요?' }).getByRole('button', { name: '삭제' }).click()
-    await expect(page.getByText('아직 내역이 없습니다')).toBeVisible()
+    await expect(page.getByText('이 달의 내역이 없습니다')).toBeVisible()
   })
 })
 
