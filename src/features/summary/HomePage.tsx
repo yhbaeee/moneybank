@@ -7,9 +7,11 @@ import { Button } from '../../components/Button'
 import { EmptyState } from '../../components/EmptyState'
 import { MonthNavigator } from '../../components/MonthNavigator'
 import { aggregateExpensesByCategory, summarizeMonth, transactionsInMonth } from '../../domain/summary'
+import { monthlyTrend } from '../../domain/trend'
 import { TransactionList } from '../transactions/TransactionList'
 import { CategoryBreakdown } from './CategoryBreakdown'
 import { SummaryCards } from './SummaryCards'
+import { TrendChart } from './TrendChart'
 
 const RECENT_COUNT = 5
 
@@ -23,6 +25,7 @@ export function HomePage() {
     () => aggregateExpensesByCategory(transactions, categories, month),
     [transactions, categories, month],
   )
+  const trend = useMemo(() => monthlyTrend(transactions, month), [transactions, month])
   const recent = useMemo(
     () => transactionsInMonth(transactions, month).slice(0, RECENT_COUNT),
     [transactions, month],
@@ -48,7 +51,14 @@ export function HomePage() {
         <h2 id="breakdown-title" className="text-lg font-bold">
           카테고리별 지출
         </h2>
-        <CategoryBreakdown shares={shares} />
+        <CategoryBreakdown shares={shares} total={summary.expense} />
+      </section>
+
+      <section aria-labelledby="trend-title" className="flex flex-col gap-3">
+        <h2 id="trend-title" className="text-lg font-bold">
+          최근 6개월 추이
+        </h2>
+        <TrendChart data={trend} selectedMonth={month} />
       </section>
 
       <section aria-labelledby="recent-title" className="flex flex-col gap-3">

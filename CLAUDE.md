@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 6(필터·검색·월 이동) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 7(차트) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -39,6 +39,13 @@ tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## 차트 (단계 7)
+
+- 차트는 **직접 SVG**로 구현한다(라이브러리 없음). `DonutChart`(카테고리 지출 비중), `TrendChart`(최근 6개월 수입·지출 묶음 막대). 색상은 Tailwind `fill-income`/`fill-expense`/`stroke-line`/`fill-muted` 등 토큰 클래스를 쓰고, 카테고리 색만 데이터의 `color`를 인라인으로 쓴다.
+- 계산은 순수 함수: 추이 집계 `domain/trend.ts`(`monthlyTrend`, 선택 월이 마지막 달), 눈금·축약 표기·도넛 호 길이 `domain/chart.ts`(`niceScale`, `formatCompactWon`, `donutSegments`). 도넛 호 길이는 합이 1000‰로 보정된 비율에서 계산한다.
+- 차트는 이미지로만 정보를 주면 안 된다: `role="img"` + `aria-label`, 도넛 옆 카테고리 목록, 추이의 "표로 보기"(`<details>` 표). 표의 월 표기는 `2026.10`(화면 제목 "2026년 10월"과 `getByText`가 겹치지 않게).
+- E2E는 `svg [data-month][data-series]`, `circle[data-category]`의 속성과 bounding box(막대 높이 비율)로 값을 검증한다. 차트 폭은 `max-w-lg`로 제한(넓은 화면에서 글자·막대가 과대 확대되지 않게).
 
 ## 월 이동·검색·필터 (단계 6)
 

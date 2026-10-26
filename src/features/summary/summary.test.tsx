@@ -29,6 +29,7 @@ describe('CategoryBreakdown', () => {
           { categoryId: 'a', name: '식비', color: '#4f46e5', amount: 20000, permille: 800 },
           { categoryId: 'b', name: '교통', color: '#0ea5e9', amount: 5000, permille: 200 },
         ]}
+        total={25000}
       />,
     )
     const items = within(screen.getByRole('list', { name: '카테고리별 지출' })).getAllByRole('listitem')
@@ -40,7 +41,7 @@ describe('CategoryBreakdown', () => {
   })
 
   it('지출이 없으면 빈 상태를 표시한다', () => {
-    render(<CategoryBreakdown shares={[]} />)
+    render(<CategoryBreakdown shares={[]} total={0} />)
     expect(screen.getByText('이 달의 지출 내역이 없습니다')).toBeInTheDocument()
   })
 })
