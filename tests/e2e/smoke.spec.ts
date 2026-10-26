@@ -1,0 +1,7 @@
+import { expect, test } from '@playwright/test'
+
+test('앱 첫 진입 시 기본 화면이 표시된다', async ({ page }) => {
+  await page.goto('/')
+  await expect(page).toHaveTitle('가계부')
+  await expect(page.getByRole('heading', { name: '가계부' })).toBeVisible()
+})

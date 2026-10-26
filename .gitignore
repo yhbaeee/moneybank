@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.log
+playwright-report
+test-results
+coverage
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# 개인 금융 원본 데이터는 커밋하지 않는다
+Raw data*.xlsx
+*.xlsx

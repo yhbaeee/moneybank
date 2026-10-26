@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 현재(3단계 완료 시점)는 **문서만 존재**하고 소스 코드는 아직 없다. 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 1(환경 구성) 완료: 스모크 화면만 있다. 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -16,18 +16,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 React + TypeScript(strict) + Vite, Tailwind CSS(다크 모드는 class 전략), React Router, 상태관리는 React Context + 커스텀 훅(외부 상태 라이브러리 없음), Vitest + React Testing Library, Playwright(E2E), 저장은 localStorage(저장소 인터페이스 뒤에 숨김). 차트 방식(직접 SVG vs 라이브러리)은 7단계에서 결정.
 
-## 명령어 (1단계에서 생성 예정, 생성 후 검증해 갱신)
+## 명령어 (단계 1에서 검증 완료)
 
 ```
 npm run dev          # 개발 서버
 npm run build        # 프로덕션 빌드
 npm run typecheck    # tsc
-npm run lint         # ESLint
+npm run lint         # oxlint (Vite 템플릿 기본, ESLint 아님)
 npm run test         # Vitest (단일 파일: npx vitest run src/domain/money.test.ts, 이름: -t "패턴")
-npm run test:e2e     # Playwright (단일 파일: npx playwright test tests/e2e/x.spec.ts, 디버그: --ui)
+npm run test:e2e     # Playwright, desktop+mobile(Pixel 7) 프로젝트, dev 서버 자동 기동 (단일 파일: npx playwright test tests/e2e/x.spec.ts, 디버그: --ui)
 ```
 
-## 아키텍처 (계획)
+## 아키텍처 (계획 — 단계 3~에서 생성)
 
 ```
 src/app/        라우팅, 프로바이더, 레이아웃
@@ -80,4 +80,5 @@ tests/e2e/      Playwright
 ## 환경 메모
 
 - Windows 11, Node v24, npm 11. 프로젝트 경로에 한글(`가계부`)이 포함되어 있어 도구 호환성 문제가 생기면 `docs/ISSUES.md`에 기록한다.
-- Playwright는 dev 서버를 자동 기동하도록 `playwright.config.ts`에 설정한다(1단계).
+- Playwright: `playwright.config.ts`가 포트 5173으로 dev 서버를 자동 기동(기존 서버 재사용). 브라우저는 Chromium만 설치(`npx playwright install chromium`).
+- `Raw data.xlsx`는 사용자의 개인 금융 원본 데이터다. `.gitignore`로 제외되어 있으니 커밋·문서 인용 금지. 이 파일 활용(가져오기)은 PRD 범위 밖이므로 사용자 지시 없이 구현하지 않는다.
