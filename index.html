@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>가계부</title>
+    <script>
+      // 첫 페인트 전에 테마를 적용해 깜빡임을 막는다. (ThemeProvider와 저장 키 동일)
+      try {
+        var t = localStorage.getItem('ledger.theme') || 'system';
+        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

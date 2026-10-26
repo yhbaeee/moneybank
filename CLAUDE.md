@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 1(환경 구성) 완료: 스모크 화면만 있다. 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 2(디자인 시스템·레이아웃) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -39,6 +39,15 @@ tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## UI 기반 (단계 2)
+
+- 색상은 `src/index.css`의 의미 토큰(`bg-surface`, `text-muted`, `border-line`, `bg-primary`, `text-income`, `text-expense`, `bg-danger` 등)만 쓴다. 라이트/다크는 `:root` / `.dark` 변수로 전환되므로 `dark:` 변형이나 하드코딩 색을 쓰지 않는다. 수입/지출은 색만으로 구분하지 말고 `+`/`−` 또는 라벨을 병행한다.
+- 컨텍스트는 `themeContext.ts` / `toastContext.ts`(훅·타입), Provider는 별도 `*.tsx`로 분리한다(Fast Refresh 린트 규칙).
+- 모달은 네이티브 `<dialog>`(`components/Modal.tsx`)를 쓴다. jsdom은 `showModal`을 지원하지 않아 `src/test/setup.ts`에 대체 구현이 있다.
+- `NavLink`는 자체 `aria-current`가 우선하므로, 하위 경로까지 활성 표시해야 하는 내비게이션은 `Link` + 직접 계산한 `aria-current`를 쓴다.
+- `/dev/components`는 개발 서버 전용 쇼케이스(프로덕션 빌드에서 라우트 제외). Playwright 스크린샷은 `test-results/screenshots/`에 저장된다.
+- 라우트: `/`, `/transactions`, `/categories`(설정 하위), `/settings`. 내역 등록/수정 폼은 모달로 4단계에서 구현.
 
 ## 필수 규칙
 

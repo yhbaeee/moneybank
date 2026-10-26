@@ -1,3 +1,63 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* 디자인 토큰: 컴포넌트는 아래 의미 기반 색상만 사용한다. */
+:root {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --fg: #0f172a;
+  --muted: #5b6678;
+  --line: #e2e8f0;
+  --primary: #4f46e5;
+  --primary-fg: #ffffff;
+  --primary-soft: #eef2ff;
+  --income: #15803d;
+  --expense: #be123c;
+  --danger: #dc2626;
+  --danger-fg: #ffffff;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --surface: #131a2e;
+  --fg: #e5e7eb;
+  --muted: #9aa6bb;
+  --line: #263049;
+  --primary: #818cf8;
+  --primary-fg: #0b1020;
+  --primary-soft: #1d2447;
+  --income: #4ade80;
+  --expense: #fb7185;
+  --danger: #f87171;
+  --danger-fg: #0b1020;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --font-sans: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
