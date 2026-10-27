@@ -62,6 +62,29 @@ export function LedgerDataProvider({ children }: { children: ReactNode }) {
         await repository.transactions.remove(id)
         await refresh()
       },
+      createCategory: async (input) => {
+        const created = await repository.categories.create(input)
+        await refresh()
+        return created
+      },
+      updateCategory: async (id, patch) => {
+        const updated = await repository.categories.update(id, patch)
+        await refresh()
+        return updated
+      },
+      removeCategory: async (id, reassignToId) => {
+        await repository.categories.remove(id, reassignToId)
+        await refresh()
+      },
+      exportData: () => repository.exportAll(),
+      importData: async (data) => {
+        await repository.importAll(data)
+        await refresh()
+      },
+      resetData: async () => {
+        await repository.reset()
+        await refresh()
+      },
     }
   }, [snapshot, repository, load])
 

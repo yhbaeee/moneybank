@@ -111,10 +111,67 @@ for (const scheme of ['light', 'dark'] as const) {
       await expectNoViolations(page, '설정')
     })
 
-    test('카테고리 관리', async ({ page }) => {
+    test('설정: 백업·초기화 영역과 가져오기 오류', async ({ page }) => {
+      await openList(page)
+      await seedTransactions(page, DATA)
+      await page.goto('/settings')
+      await page.locator('input[type="file"]').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('x') })
+      await expect(page.getByRole('alert')).toBeVisible()
+      await expectNoViolations(page, '설정(가져오기 오류)')
+    })
+
+    test('설정: 초기화·가져오기 확인 대화상자', async ({ page }) => {
+      await openList(page)
+      await seedTransactions(page, DATA)
+      await page.goto('/settings')
+      await page.getByRole('button', { name: '모든 데이터 초기화' }).click()
+      await expect(page.getByRole('dialog', { name: '모든 데이터를 초기화할까요?' })).toBeVisible()
+      await expectNoViolations(page, '초기화 확인')
+      await page.getByRole('dialog').getByRole('button', { name: '취소' }).click()
+
+      const backup = JSON.stringify(await page.evaluate(() => JSON.parse(localStorage.getItem('ledger.data')!)))
+      await page.locator('input[type="file"]').setInputFiles({ name: 'ok.json', mimeType: 'application/json', buffer: Buffer.from(backup) })
+      await expect(page.getByRole('dialog', { name: '백업으로 바꿀까요?' })).toBeVisible()
+      await expectNoViolations(page, '가져오기 확인')
+    })
+
+    test('카테고리 관리: 목록(데이터 있음)', async ({ page }) => {
+      await openList(page)
+      await seedTransactions(page, DATA)
       await page.goto('/categories')
       await expect(page.getByRole('heading', { level: 1, name: '카테고리 관리' })).toBeVisible()
       await expectNoViolations(page, '카테고리 관리')
+    })
+
+    test('카테고리 관리: 추가·수정 폼과 오류 상태', async ({ page }) => {
+      await page.goto('/categories')
+      await page.getByRole('button', { name: '지출 카테고리 추가' }).click()
+      const dialog = page.getByRole('dialog', { name: '지출 카테고리 추가' })
+      await expect(dialog).toBeVisible()
+      await expectNoViolations(page, '카테고리 추가 폼')
+
+      await dialog.getByRole('button', { name: '저장' }).click()
+      await expect(dialog.getByRole('alert')).toBeVisible()
+      await expectNoViolations(page, '카테고리 추가 폼(오류)')
+      await dialog.getByRole('button', { name: '취소' }).click()
+
+      await page.getByRole('button', { name: '지출 카테고리 식비 수정' }).click()
+      await expect(page.getByRole('dialog', { name: '지출 카테고리 수정' })).toBeVisible()
+      await expectNoViolations(page, '카테고리 수정 폼')
+    })
+
+    test('카테고리 관리: 삭제 확인과 내역 옮기기', async ({ page }) => {
+      await openList(page)
+      await seedTransactions(page, DATA)
+      await page.goto('/categories')
+      await page.getByRole('button', { name: '지출 카테고리 교통 삭제' }).click()
+      await expect(page.getByRole('dialog', { name: '카테고리 삭제' })).toBeVisible()
+      await expectNoViolations(page, '카테고리 삭제 확인')
+      await page.getByRole('dialog').getByRole('button', { name: '취소' }).click()
+
+      await page.getByRole('button', { name: '지출 카테고리 식비 삭제' }).click()
+      await expect(page.getByLabel('옮길 카테고리')).toBeVisible()
+      await expectNoViolations(page, '카테고리 삭제(내역 옮기기)')
     })
   })
 }

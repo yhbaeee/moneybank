@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 8(반응형·접근성) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
+- 단계 9(카테고리 관리·JSON 백업) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
 - 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
 - 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
 
@@ -39,6 +39,15 @@ tests/e2e/      Playwright
 ```
 
 핵심 흐름: `features(UI)` → Context/훅 → `Repository 인터페이스` → localStorage 구현. 집계·필터·비율 계산은 `domain`의 순수 함수로만 하고 UI에서 직접 계산하지 않는다. 저장소 구현체를 교체해도(SQLite/Supabase) UI와 domain은 바뀌지 않아야 한다.
+
+## 카테고리 관리·백업 (단계 9)
+
+- 카테고리 규칙(이름 1~20자·같은 유형 내 중복 금지, 유형별 '기타' 삭제 불가, 사용 중 삭제는 같은 유형으로 재배정 후에만)은 **저장소 계층**이 강제하고, 화면은 `CategoryRuleError.message`를 필드 오류로 보여 준다. 화면은 `useLedgerData()`의 `createCategory/updateCategory/removeCategory`만 쓴다.
+- 색은 9색 팔레트(`CATEGORY_COLOR_OPTIONS`, 이름 포함)에서 선택하고 새 카테고리는 `pickCategoryColor`로 같은 유형에서 안 쓴 색을 먼저 배정한다. 9개를 넘으면 색이 반복된다(알려진 한계). 순서 변경은 MVP 제외.
+- 삭제 후 포커스가 사라질 수 있는 화면(행이 사라지는 경우)은 `useFocusHeadingIfLost(isOpen)`로 h1에 복구한다.
+- 백업: 내보내기는 `createBackup`+`serializeBackup`+`downloadTextFile`(파일명 `가계부-백업-YYYY-MM-DD.json`), 가져오기는 `parseBackup`으로 **검증 → 확인 대화상자 → 전체 교체**(병합 없음). 검증 실패 시 기존 데이터는 절대 바꾸지 않고 문제 목록(최대 5개)을 `role="alert"`로 보여 준다. 파일은 10MB 상한. 테마는 기기 설정이라 백업·초기화 대상이 아니다.
+- jsdom 테스트에서는 `vi.mock('../../app/download')`로 다운로드를 막는다. E2E는 `page.waitForEvent('download')`와 `locator('input[type="file"]').setInputFiles(...)`(입력은 숨김 상태)를 쓴다.
+- 새 화면·대화상자는 `a11y.spec.ts`에 케이스를 추가한다(이 단계에서 설정·카테고리 화면과 모든 대화상자를 추가함).
 
 ## 접근성 (단계 8)
 

@@ -15,6 +15,23 @@ export const CATEGORY_COLORS = [
   '#64748b',
 ] as const
 
+const CATEGORY_COLOR_NAMES = ['인디고', '하늘', '청록', '주황', '빨강', '보라', '연두', '분홍', '회색'] as const
+
+/** 카테고리 색 선택지(팔레트 색 + 한국어 이름). 색에만 의존하지 않도록 이름을 함께 제공한다. */
+export const CATEGORY_COLOR_OPTIONS: { value: string; label: string }[] = CATEGORY_COLORS.map((value, index) => ({
+  value,
+  label: CATEGORY_COLOR_NAMES[index],
+}))
+
+/** 같은 유형에서 아직 쓰지 않은 팔레트 색을 먼저 고른다. 모두 쓰였으면 순환한다. */
+export function pickCategoryColor(categories: readonly Category[], type: TransactionType): string {
+  const used = new Set(categories.filter((category) => category.type === type).map((category) => category.color))
+  const unused = CATEGORY_COLORS.find((color) => !used.has(color))
+  if (unused) return unused
+  const count = categories.filter((category) => category.type === type).length
+  return CATEGORY_COLORS[count % CATEGORY_COLORS.length]
+}
+
 const EXPENSE_CATEGORY_NAMES = ['식비', '교통', '주거·통신', '쇼핑', '의료·건강', '문화·여가', '교육', '경조사', '기타']
 const INCOME_CATEGORY_NAMES = ['급여', '부수입', '용돈', '기타']
 const PROTECTED_CATEGORY_NAME = '기타'

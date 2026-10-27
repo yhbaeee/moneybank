@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useToast } from '../components/toastContext'
 import type { Transaction } from '../domain/types'
 import { TransactionForm } from '../features/transactions/TransactionForm'
-import { focusPageHeading } from './focus'
 import { useLedgerData } from './ledgerDataContext'
 import { TransactionEditorContext, type TransactionEditorValue } from './transactionEditorContext'
+import { useFocusHeadingIfLost } from './useFocusHeadingIfLost'
 
 type EditorState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; transaction: Transaction }
 
@@ -15,16 +15,10 @@ export function TransactionEditorProvider({ children }: { children: ReactNode })
   const { showToast } = useToast()
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' })
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const wasOpen = useRef(false)
   const isOpen = editor.mode !== 'closed'
 
   // 폼을 닫았는데 포커스가 사라졌다면(예: 삭제로 눌렀던 행이 없어짐) 페이지 제목으로 옮긴다.
-  useEffect(() => {
-    if (wasOpen.current && !isOpen && (!document.activeElement || document.activeElement === document.body)) {
-      focusPageHeading()
-    }
-    wasOpen.current = isOpen
-  }, [isOpen])
+  useFocusHeadingIfLost(isOpen)
 
   const value = useMemo<TransactionEditorValue>(
     () => ({
