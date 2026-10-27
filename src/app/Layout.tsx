@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { focusPageHeading } from './focus'
+import { StorageBanner } from './StorageBanner'
 import { documentTitleFor } from './routeMeta'
 import { useTransactionEditor } from './transactionEditorContext'
 
@@ -74,6 +75,8 @@ export function Layout() {
           </nav>
         </div>
       </header>
+
+      <StorageBanner />
 
       <main id="main-content" ref={mainRef} tabIndex={-1} className="mx-auto max-w-5xl px-4 pb-24 pt-4 outline-none md:pb-8">
         <Outlet />

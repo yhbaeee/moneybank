@@ -7,12 +7,8 @@ import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { useToast } from '../../components/toastContext'
 import { todayString } from '../../domain/date'
 import type { LedgerData } from '../../domain/types'
-import { backupFileName, createBackup, parseBackup, serializeBackup } from '../../storage/backup'
-import { InvalidDataError } from '../../storage/errors'
-
-/** 백업 파일 크기 상한. 이보다 크면 읽지 않고 거부한다. */
-const MAX_BACKUP_BYTES = 10 * 1024 * 1024
-const MAX_SHOWN_PROBLEMS = 5
+import { backupFileName, createBackup, serializeBackup } from '../../storage/backup'
+import { readBackupFile } from '../../storage/backupFile'
 
 interface ImportFailure {
   message: string
@@ -49,19 +45,9 @@ export function BackupSection() {
     setFailure(null)
     if (!file) return
 
-    if (file.size > MAX_BACKUP_BYTES) {
-      setFailure({ message: '파일이 너무 큽니다. (최대 10MB)', details: [] })
-      return
-    }
-    try {
-      setPending(parseBackup(await file.text()))
-    } catch (error) {
-      if (error instanceof InvalidDataError) {
-        setFailure({ message: error.message, details: error.details.slice(0, MAX_SHOWN_PROBLEMS) })
-      } else {
-        setFailure({ message: '파일을 읽지 못했습니다.', details: [] })
-      }
-    }
+    const result = await readBackupFile(file)
+    if (result.ok) setPending(result.data)
+    else setFailure({ message: result.message, details: result.details })
   }
 
   async function handleConfirmImport() {

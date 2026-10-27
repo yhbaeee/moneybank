@@ -97,3 +97,59 @@ export async function openFilterPanel(page: Page) {
 export function filterBar(page: Page) {
   return page.getByRole('region', { name: '내역 필터' })
 }
+
+/** 앱이 쓰는 저장 공간 상한 추정값과 같은 규칙: WebKit은 한글 데이터에서 절반 수준이다. */
+export function quotaCharsFor(browserName: string): number {
+  return browserName === 'webkit' ? 2_500_000 : 5_000_000
+}
+
+/** 내역 1건이 차지하는 대략적인 문자 수(실측 약 259자). 목표 사용률에 맞는 개월 수를 계산할 때 쓴다. */
+export const CHARS_PER_BULK_TRANSACTION = 259
+
+/** 상한의 targetPercent%에 가까워지도록 매달 perMonth건씩 필요한 개월 수를 계산한다. */
+export function monthsForUsage(targetPercent: number, browserName: string, perMonth = 1000): number {
+  return Math.ceil(((targetPercent / 100) * quotaCharsFor(browserName)) / (perMonth * CHARS_PER_BULK_TRANSACTION))
+}
+
+/**
+ * 많은 내역을 한 번에 주입하고 새로고침한다. 가장 최근 달(2026-10)부터 거꾸로 months개월에 걸쳐
+ * 매달 perMonth건씩 넣는다(수입 10%, 지출 90%, 메모에 "점심 식사"가 들어가 검색 대상이 된다).
+ * 반환값의 chars는 저장된 문서의 문자 수다.
+ */
+export async function seedBulkTransactions(page: Page, perMonth: number, months: number): Promise<{ count: number; chars: number }> {
+  const result = await page.evaluate(
+    ({ perMonth, months }) => {
+      const key = 'ledger.data'
+      const data = JSON.parse(localStorage.getItem(key)!)
+      let n = 0
+      for (let m = 0; m < months; m++) {
+        const date = new Date(2026, 9 - m, 1)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        for (let i = 0; i < perMonth; i++) {
+          const income = i % 10 === 0
+          n++
+          data.transactions.push({
+            id: `bulk-${n}`,
+            type: income ? 'income' : 'expense',
+            amount: 1000 + ((i * 37) % 90000),
+            date: `${year}-${month}-${String((i % 28) + 1).padStart(2, '0')}`,
+            categoryId: income ? `cat-income-${(i % 4) + 1}` : `cat-expense-${(i % 9) + 1}`,
+            paymentMethodId: `pay-${(i % 5) + 1}`,
+            memo: `메모 ${n} 점심 식사`,
+            tags: i % 3 === 0 ? ['외식', '회사'] : [],
+            ownerId: 'member-me',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          })
+        }
+      }
+      const text = JSON.stringify(data)
+      localStorage.setItem(key, text)
+      return { count: n, chars: text.length }
+    },
+    { perMonth, months },
+  )
+  await page.reload()
+  return result
+}

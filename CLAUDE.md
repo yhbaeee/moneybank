@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 10(테스트 보강) 구현 완료(승인 대기). 남은 것: 단계 11(성능·오류 처리·최종 정리). 구현은 `docs/DEVELOPMENT_PLAN.md`의 단계 순서대로 진행한다(단계 8이 둘로 나뉘어 총 11단계).
-- 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록), `docs/TESTING.md`(테스트 가이드·요구 추적표·변이 점검).
+- **MVP 완료**(11단계 모두 구현·검증, 사용자 승인 후 완료 선언, 태그 `mvp-v1.0.0`). 이후 작업은 향후 확장(README, `docs/MVP_CHECKLIST.md` 5·6절) — 새 작업도 같은 규칙(계획 제시 → 승인 → 구현 → 검증 → 보고)으로 진행한다.
+- 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록), `docs/TESTING.md`(테스트 가이드·요구 추적표·변이 점검), `docs/MVP_CHECKLIST.md`(PRD 성공 기준별 증거), `README.md`(소개), `docs/MANUAL.md`(실행·사용 매뉴얼).
 - 구현 후에는 이 파일을 실제 상태에 맞게 갱신한다.
 
 ## 프로젝트 목적
@@ -55,6 +55,17 @@ tests/e2e/      Playwright
 - 백업: 내보내기는 `createBackup`+`serializeBackup`+`downloadTextFile`(파일명 `가계부-백업-YYYY-MM-DD.json`), 가져오기는 `parseBackup`으로 **검증 → 확인 대화상자 → 전체 교체**(병합 없음). 검증 실패 시 기존 데이터는 절대 바꾸지 않고 문제 목록(최대 5개)을 `role="alert"`로 보여 준다. 파일은 10MB 상한. 테마는 기기 설정이라 백업·초기화 대상이 아니다.
 - jsdom 테스트에서는 `vi.mock('../../app/download')`로 다운로드를 막는다. E2E는 `page.waitForEvent('download')`와 `locator('input[type="file"]').setInputFiles(...)`(입력은 숨김 상태)를 쓴다.
 - 새 화면·대화상자는 `a11y.spec.ts`에 케이스를 추가한다(이 단계에서 설정·카테고리 화면과 모든 대화상자를 추가함).
+
+## 성능·복구·용량 (단계 11)
+
+- **저장소 읽기 캐시**: `localStorageRepository`는 저장된 원문 문자열이 직전과 같으면 파싱·검증 결과를 재사용한다(다른 탭 변경은 원문 비교로 감지). 캐시된 데이터는 **깊이 얼려** 있어 반환값을 변경하면 `TypeError` — 항상 복사해서 쓴다. 호출자가 넘긴 객체(`importAll`)는 얼리거나 캐시에 공유하지 않는다. 쓰기 실패 시 캐시는 폐기된다.
+- **긴 목록**: 내역 화면은 100건씩(`PAGE_SIZE`) 그리고 "더 보기"로 늘린다. 합계·건수는 전체 기준. 월·필터가 바뀌면 렌더링 중 파생 상태 초기화로 항상 처음 100건부터. 행은 `memo`(반환 객체가 캐시와 같은 참조여야 효과가 있으니 복사하지 말 것).
+- **시작 시 저장소 상태(`LedgerProvider`)**: 정상 / 손상(`StorageCorruptedError`) → `RecoveryScreen`(원본 저장·백업 복구·확인 후 새로 시작, 원본은 사용자가 고르기 전엔 지우지 않음) / 접근 불가(`StorageUnavailableError`) → 메모리 저장소(`createSessionRepository`)로 계속 + 닫을 수 없는 `StorageBanner` / 그 외 오류 화면. `useStorageMode()`로 모드를 읽는다.
+- **용량**: 상한은 `estimateQuotaChars()`(Chromium·Firefox 5.0M자, WebKit 2.5M자 — Safari는 한글 데이터를 2바이트로 세어 한도가 절반, ISS-018). 사용률은 `domain/storageUsage.ts`(80% 경고·95% 위험), `StorageBanner`(닫기 가능)·설정의 `StorageUsageSection`. E2E는 `quotaCharsFor(browserName)`/`monthsForUsage`로 엔진별 한도에 맞춰 데이터 양을 정한다.
+- **오류 경계**(`ErrorBoundary`)와 **다중 탭 동기화**(`LedgerDataProvider`의 `storage` 이벤트 리스너, 키가 `ledger.data`이거나 null일 때만 재조회).
+- `LedgerRepository`에는 `exportRaw()`(손상 원문 포함)와 `getUsage()`가 있다. 백업 파일 읽기·검증은 `storage/backupFile.ts`(`readBackupFile`)로 설정과 복구 화면이 공유한다.
+- 번들 예산은 `scripts/check-bundle.mjs`(gzip JS 120KB, CSS 15KB). 프로덕션 빌드 E2E는 `playwright.preview.config.ts`(`npm run test:e2e:preview`, `@core`만).
+- 대량 데이터 E2E는 `seedBulkTransactions(page, perMonth, months)`로 주입한다(건당 약 259자). 성능은 시간 단언 대신 결정적 지표(파싱 횟수, 렌더 행 수)로 검증하고 시간은 참고용.
 
 ## 테스트 (단계 10)
 

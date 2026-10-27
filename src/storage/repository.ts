@@ -49,6 +49,12 @@ export interface PaymentMethodRepository {
   list(): Promise<PaymentMethod[]>
 }
 
+/** 저장 공간 사용량(문자 수 기준). limitChars는 브라우저가 허용하는 대략적인 상한이다. */
+export interface StorageUsage {
+  usedChars: number
+  limitChars: number
+}
+
 export interface LedgerRepository {
   readonly transactions: TransactionRepository
   readonly categories: CategoryRepository
@@ -62,4 +68,8 @@ export interface LedgerRepository {
   importAll(data: LedgerData): Promise<void>
   /** 모든 데이터를 지우고 기본 데이터로 되돌린다. */
   reset(): Promise<void>
+  /** 저장된 원문 그대로(손상되어 읽을 수 없는 경우에도). 저장된 것이 없으면 null. 복구용으로 파일에 저장할 때 쓴다. */
+  exportRaw(): Promise<string | null>
+  /** 현재 저장 공간 사용량 */
+  getUsage(): Promise<StorageUsage>
 }

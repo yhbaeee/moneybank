@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import type { StorageUsage } from '../storage/repository'
 import type {
   Category,
   CategoryInput,
@@ -15,6 +16,8 @@ export interface LedgerDataValue {
   transactions: Transaction[]
   categories: Category[]
   paymentMethods: PaymentMethod[]
+  /** 저장 공간 사용량(저장·갱신 때마다 새로 읽는다) */
+  usage: StorageUsage
   createTransaction: (input: TransactionInput) => Promise<Transaction>
   updateTransaction: (id: string, input: TransactionInput) => Promise<Transaction>
   removeTransaction: (id: string) => Promise<void>

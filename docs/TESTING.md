@@ -58,6 +58,21 @@
 | 거래 1건 등록까지 1분 이내(사용성) | 시간은 측정하지 않는다. 대신 **금액만 입력하면 저장된다**(`transactions.spec`)는 것으로 입력 단계가 최소임을 확인. 실제 소요 시간은 사용자 확인 필요 |
 | 데이터 보호(손상·저장 실패) | `storage.spec`, `user-journeys`(손상→복구), `errorHandling.test`, `localStorageRepository.test` |
 
+## 단계 11에서 추가된 검증
+
+| 영역 | 테스트 |
+| --- | --- |
+| 저장소 읽기 캐시·불변성·원문/사용량 | `repositoryCache.test.ts`(파싱 횟수, 다른 탭 변경 감지, 쓰기 실패 시 캐시 폐기, 12,000건 동작) |
+| 긴 목록 점진 렌더링 | `pagedList.test.tsx`(250건: 100→200→250, 포커스 이동, 필터·월 변경 시 초기화), `resilience.spec.ts` |
+| 용량 요약·배너·사용량 표시 | `storageUsage.test.ts`(80%/95% 경계), `storageStatus.test.tsx`, `resilience.spec.ts`(실제로 가득 찬 저장소에서 오류·입력 보존·재시도) |
+| 손상 데이터 복구 | `LedgerProvider.test.tsx`, `backupFile.test.ts`, `resilience.spec.ts`(원본 저장·백업 복구·잘못된 파일·새로 시작), `user-journeys.spec.ts` |
+| 저장소 사용 불가(세션 모드) | `LedgerProvider.test.tsx`, `errorHandling.test.tsx`, `memoryStorage.test.ts`, `resilience.spec.ts` |
+| 오류 경계 | `ErrorBoundary.test.tsx` |
+| 다중 탭 | `multiTab.test.tsx`, `resilience.spec.ts`(두 탭 동시 사용, 삭제 반영) |
+| 번들·프로덕션 빌드 | `npm run check:bundle`, `npm run test:e2e:preview` |
+
+엔진별 한도: Safari(WebKit)는 한글 데이터에서 localStorage 한도가 절반이라(ISS-018) 용량 시나리오는 `quotaCharsFor(browserName)`·`monthsForUsage()`로 데이터 양을 엔진에 맞춰 정한다.
+
 ## 작성 규칙
 
 - **날짜**: "오늘"에 의존하지 않는다. E2E는 `fixToday(page)`(goto **전에**), jsdom은 `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime(...)`. 단위 테스트의 날짜는 `new Date(y, m, d)`(로컬 생성자)로 만들어 TZ와 무관해야 한다. 확인: `TZ=America/Los_Angeles npx vitest run`.
@@ -67,6 +82,7 @@
 - **저장소 실패 흉내**: `vi.spyOn(Storage.prototype, 'setItem'/'getItem')`으로 실제 localStorage 오류를 만든다(`errorHandling.test.tsx` 참고). 다른 탭에서 바뀐 데이터는 `createLocalStorageRepository()`로 직접 변경해 흉내 낸다.
 - **E2E 헬퍼**: `tests/e2e/helpers.ts`(`fixToday`, `openHome`, `openList`, `fillForm`, `addTransaction`, `seedTransactions`, `openFilterPanel`, `filterBar`). import는 `./helpers.ts`처럼 확장자를 붙인다.
 - **태그**: 교차 브라우저에서도 돌릴 핵심 흐름에는 `test('...', { tag: '@core' }, ...)`를 붙인다. 새 기능의 대표 시나리오 한두 개는 `@core`로 지정한다.
+- **무거운 테스트의 시간 제한**: 큰 데이터를 렌더링하거나 여러 단계를 잇는 테스트는 전체 병렬·커버리지 계측·느린 엔진(WebKit)에서 기본 제한(Vitest 5초, Playwright 30초)이 빠듯하다. 단독 실행에서는 통과하고 부하에서만 실패하면 `describe(..., { timeout })`/`test.setTimeout`/`test.slow()`로 해당 테스트의 제한만 늘린다(`pagedList.test.tsx`, `user-journeys.spec.ts` 참고). 재시도로 가리지 않는다.
 - **정당한 건너뜀만**: 뷰포트 전용 테스트는 `test.skip(isMobile, '이유')`로 명시한다. 실패하는 테스트를 건너뛰어 통과시키지 않는다.
 - **`any`**: 앱 코드에서는 금지. 스키마 검증 테스트처럼 일부러 데이터를 망가뜨리는 경우에만 테스트 코드에서 허용한다.
 

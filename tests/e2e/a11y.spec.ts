@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { fixToday, openFilterPanel, openHome, openList, seedTransactions, type SeedTransaction } from './helpers.ts'
+import { fixToday, monthsForUsage, openFilterPanel, openHome, openList, seedBulkTransactions, seedTransactions, type SeedTransaction } from './helpers.ts'
 
 // 오늘 = 2026-10-27
 test.beforeEach(async ({ page }) => {
@@ -135,6 +135,42 @@ for (const scheme of ['light', 'dark'] as const) {
       await expectNoViolations(page, '가져오기 확인')
     })
 
+    test('손상된 데이터 복구 화면(오류 표시 포함)', async ({ page }) => {
+      await openHome(page)
+      await page.evaluate(() => localStorage.setItem('ledger.data', '{broken'))
+      await page.reload()
+      await expect(page.getByRole('heading', { level: 1, name: '저장된 데이터를 읽을 수 없습니다' })).toBeVisible()
+      await expectNoViolations(page, '복구 화면')
+
+      await page.locator('input[type="file"]').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('x') })
+      await expect(page.getByRole('alert').filter({ hasText: '백업 파일을 사용할 수 없습니다' })).toBeVisible()
+      await expectNoViolations(page, '복구 화면(파일 오류)')
+
+      await page.getByRole('button', { name: '모든 데이터를 지우고 새로 시작' }).click()
+      await expect(page.getByRole('dialog', { name: '모두 지우고 새로 시작할까요?' })).toBeVisible()
+      await expectNoViolations(page, '복구 화면(새로 시작 확인)')
+    })
+
+    test('저장 공간 경고 배너와 사용량 표시', async ({ page, browserName }) => {
+      test.setTimeout(60_000)
+      await openHome(page)
+      await seedBulkTransactions(page, 500, monthsForUsage(88, browserName, 500))
+      await expect(page.getByRole('status').filter({ hasText: '저장 공간이 부족해지고 있습니다' })).toBeVisible()
+      await expectNoViolations(page, '홈(저장 공간 경고)')
+      await page.goto('/settings')
+      await expect(page.getByRole('progressbar', { name: '저장 공간 사용량' })).toBeVisible()
+      await expectNoViolations(page, '설정(저장 공간 사용량)')
+    })
+
+    test('긴 내역 목록과 "더 보기"', async ({ page }) => {
+      test.setTimeout(60_000)
+      await openHome(page)
+      await seedBulkTransactions(page, 400, 1)
+      await page.goto('/transactions')
+      await expect(page.getByRole('button', { name: /더 보기/ })).toBeVisible()
+      await expectNoViolations(page, '내역(더 보기)')
+    })
+
     test('카테고리 관리: 목록(데이터 있음)', async ({ page }) => {
       await openList(page)
       await seedTransactions(page, DATA)
@@ -175,3 +211,25 @@ for (const scheme of ['light', 'dark'] as const) {
     })
   })
 }
+
+test.describe('접근성 자동 검사: 브라우저 저장소를 쓸 수 없는 환경', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`임시 저장소 경고 배너 (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme })
+      await page.addInitScript(() => {
+        Object.defineProperty(window, 'localStorage', {
+          configurable: true,
+          get() {
+            throw new DOMException('denied', 'SecurityError')
+          },
+        })
+      })
+      await page.goto('/')
+      await expect(page.getByRole('status').filter({ hasText: '창을 닫으면 입력한 내용이 사라집니다' })).toBeVisible()
+      await expectNoViolations(page, '홈(임시 저장소)')
+      await page.goto('/settings')
+      await expect(page.getByRole('heading', { level: 1, name: '설정' })).toBeVisible()
+      await expectNoViolations(page, '설정(임시 저장소)')
+    })
+  }
+})

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Badge } from '../../components/Badge'
 import { formatKoreanDate } from '../../domain/date'
 import { formatSignedWon } from '../../domain/money'
@@ -29,6 +29,53 @@ function groupByDate(transactions: Transaction[]): DateGroup[] {
   return groups
 }
 
+interface TransactionRowProps {
+  transaction: Transaction
+  category: Category | undefined
+  payment: PaymentMethod | undefined
+  onSelect: (transaction: Transaction) => void
+}
+
+/** 메모이제이션한 행. 필터 입력처럼 목록 전체가 다시 그려질 때 바뀌지 않은 행은 건너뛴다. */
+const TransactionRow = memo(function TransactionRow({ transaction, category, payment, onSelect }: TransactionRowProps) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(transaction)}
+        className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary-soft"
+      >
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="flex items-center gap-2 font-medium">
+            <span
+              aria-hidden="true"
+              className="size-3 shrink-0 rounded-full"
+              style={{ backgroundColor: category?.color ?? '#64748b' }}
+            />
+            {category?.name ?? '(삭제된 카테고리)'}
+          </span>
+          {(transaction.memo || transaction.tags.length > 0 || payment) && (
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+              {payment && <span>{payment.name}</span>}
+              {transaction.memo && <span className="truncate">{transaction.memo}</span>}
+              {transaction.tags.map((tag) => (
+                <Badge key={tag}>#{tag}</Badge>
+              ))}
+            </span>
+          )}
+        </span>
+        <span
+          className={`shrink-0 font-semibold tabular-nums ${
+            transaction.type === 'income' ? 'text-income' : 'text-expense'
+          }`}
+        >
+          {formatSignedWon(transaction.amount, transaction.type)}
+        </span>
+      </button>
+    </li>
+  )
+})
+
 export function TransactionList({
   transactions,
   categories,
@@ -47,46 +94,15 @@ export function TransactionList({
         <section key={group.date} aria-label={formatKoreanDate(group.date)}>
           <DateHeading className="mb-1 text-sm font-medium text-muted">{formatKoreanDate(group.date)}</DateHeading>
           <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
-            {group.items.map((transaction) => {
-              const category = categoryById.get(transaction.categoryId)
-              const payment = paymentById.get(transaction.paymentMethodId)
-              return (
-                <li key={transaction.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(transaction)}
-                    className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary-soft"
-                  >
-                    <span className="flex min-w-0 flex-col gap-1">
-                      <span className="flex items-center gap-2 font-medium">
-                        <span
-                          aria-hidden="true"
-                          className="size-3 shrink-0 rounded-full"
-                          style={{ backgroundColor: category?.color ?? '#64748b' }}
-                        />
-                        {category?.name ?? '(삭제된 카테고리)'}
-                      </span>
-                      {(transaction.memo || transaction.tags.length > 0 || payment) && (
-                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-                          {payment && <span>{payment.name}</span>}
-                          {transaction.memo && <span className="truncate">{transaction.memo}</span>}
-                          {transaction.tags.map((tag) => (
-                            <Badge key={tag}>#{tag}</Badge>
-                          ))}
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      className={`shrink-0 font-semibold tabular-nums ${
-                        transaction.type === 'income' ? 'text-income' : 'text-expense'
-                      }`}
-                    >
-                      {formatSignedWon(transaction.amount, transaction.type)}
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
+            {group.items.map((transaction) => (
+              <TransactionRow
+                key={transaction.id}
+                transaction={transaction}
+                category={categoryById.get(transaction.categoryId)}
+                payment={paymentById.get(transaction.paymentMethodId)}
+                onSelect={onSelect}
+              />
+            ))}
           </ul>
         </section>
       ))}

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Category, PaymentMethod, Transaction } from '../domain/types'
+import { LEDGER_STORAGE_KEY } from '../storage/localStorageRepository'
+import type { StorageUsage } from '../storage/repository'
 import { describeError } from './describeError'
 import { LedgerDataContext, type LedgerDataValue } from './ledgerDataContext'
 import { useLedger } from './ledgerContext'
@@ -8,6 +10,7 @@ interface Snapshot {
   transactions: Transaction[]
   categories: Category[]
   paymentMethods: PaymentMethod[]
+  usage: StorageUsage
 }
 
 type State = { kind: 'loading' } | { kind: 'ready'; snapshot: Snapshot } | { kind: 'error'; error: unknown }
@@ -18,12 +21,13 @@ export function LedgerDataProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
 
   const load = useCallback(async (): Promise<Snapshot> => {
-    const [transactions, categories, paymentMethods] = await Promise.all([
+    const [transactions, categories, paymentMethods, usage] = await Promise.all([
       repository.transactions.list(),
       repository.categories.list(),
       repository.paymentMethods.list(),
+      repository.getUsage(),
     ])
-    return { transactions, categories, paymentMethods }
+    return { transactions, categories, paymentMethods, usage }
   }, [repository])
 
   useEffect(() => {
@@ -39,6 +43,20 @@ export function LedgerDataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
+  }, [load])
+
+  // 다른 탭이 데이터를 바꾸면(storage 이벤트) 화면을 최신 상태로 다시 불러온다.
+  // 이 탭의 저장은 storage 이벤트를 발생시키지 않으므로 중복 갱신은 없다.
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== null && event.key !== LEDGER_STORAGE_KEY) return
+      load().then(
+        (snapshot) => setState({ kind: 'ready', snapshot }),
+        (error: unknown) => setState({ kind: 'error', error }),
+      )
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
   }, [load])
 
   const snapshot = state.kind === 'ready' ? state.snapshot : null

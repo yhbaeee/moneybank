@@ -9,3 +9,15 @@ export function useLedger(): LedgerRepository {
   if (!repository) throw new Error('useLedger는 LedgerProvider 안에서 사용해야 합니다.')
   return repository
 }
+
+/**
+ * persistent: 브라우저 저장소에 저장한다.
+ * session: 브라우저 저장소를 쓸 수 없어 이 창이 열려 있는 동안만 유지되는 임시 저장소를 쓴다.
+ */
+export type StorageMode = 'persistent' | 'session'
+
+export const StorageModeContext = createContext<StorageMode>('persistent')
+
+export function useStorageMode(): StorageMode {
+  return useContext(StorageModeContext)
+}

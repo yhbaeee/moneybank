@@ -5,6 +5,7 @@ import { SettingsPage } from '../features/settings/SettingsPage'
 import { HomePage } from '../features/summary/HomePage'
 import { TransactionsPage } from '../features/transactions/TransactionsPage'
 import { DevComponents } from './DevComponents'
+import { ErrorBoundary } from './ErrorBoundary'
 import { Layout } from './Layout'
 import { LedgerDataProvider } from './LedgerDataProvider'
 import { LedgerProvider } from './LedgerProvider'
@@ -15,28 +16,30 @@ import { TransactionEditorProvider } from './TransactionEditorProvider'
 export function App() {
   return (
     <ThemeProvider>
-      <ToastProvider>
-        <LedgerProvider>
-          <LedgerDataProvider>
-            <SelectedMonthProvider>
-              <TransactionEditorProvider>
-                <BrowserRouter>
-                  <Routes>
-                    <Route element={<Layout />}>
-                      <Route index element={<HomePage />} />
-                      <Route path="transactions" element={<TransactionsPage />} />
-                      <Route path="categories" element={<CategoriesPage />} />
-                      <Route path="settings" element={<SettingsPage />} />
-                      {import.meta.env.DEV && <Route path="dev/components" element={<DevComponents />} />}
-                      <Route path="*" element={<HomePage />} />
-                    </Route>
-                  </Routes>
-                </BrowserRouter>
-              </TransactionEditorProvider>
-            </SelectedMonthProvider>
-          </LedgerDataProvider>
-        </LedgerProvider>
-      </ToastProvider>
+      <ErrorBoundary>
+        <ToastProvider>
+          <LedgerProvider>
+            <LedgerDataProvider>
+              <SelectedMonthProvider>
+                <TransactionEditorProvider>
+                  <BrowserRouter>
+                    <Routes>
+                      <Route element={<Layout />}>
+                        <Route index element={<HomePage />} />
+                        <Route path="transactions" element={<TransactionsPage />} />
+                        <Route path="categories" element={<CategoriesPage />} />
+                        <Route path="settings" element={<SettingsPage />} />
+                        {import.meta.env.DEV && <Route path="dev/components" element={<DevComponents />} />}
+                        <Route path="*" element={<HomePage />} />
+                      </Route>
+                    </Routes>
+                  </BrowserRouter>
+                </TransactionEditorProvider>
+              </SelectedMonthProvider>
+            </LedgerDataProvider>
+          </LedgerProvider>
+        </ToastProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   )
 }

@@ -28,6 +28,8 @@ async function expectSummary(page: Page, income: string, expense: string, balanc
  * 단계별 테스트가 모두 통과해도 단계 사이의 연결(상태 공유, 갱신, 저장)에서 생기는 문제를 잡기 위한 통합 시나리오다.
  */
 test('핵심 사용자 여정: 기록 → 요약 → 탐색 → 수정·삭제 → 카테고리 → 백업·복원', { tag: '@core' }, async ({ page }) => {
+  // 11단계에 걸친 긴 시나리오(다운로드·가져오기 포함)라 느린 엔진·부하에서는 기본 30초가 빠듯하다.
+  test.slow()
   await test.step('첫 진입: 빈 화면과 0원 요약', async () => {
     await page.goto('/')
     await expect(page).toHaveTitle('홈 · 가계부')
@@ -170,16 +172,14 @@ test('데이터 보호 여정: 손상된 저장 데이터는 덮어쓰지 않고
   // 저장 데이터가 손상된 상황(다른 도구가 값을 망가뜨림)
   await page.evaluate(() => localStorage.setItem('ledger.data', '{broken'))
   await page.reload()
-  await expect(page.getByRole('alert')).toContainText('손상')
+  await expect(page.getByRole('heading', { level: 1, name: '저장된 데이터를 읽을 수 없습니다' })).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('ledger.data'))).toBe('{broken')
 
-  // 사용자는 문제를 해결한 뒤(저장소 비우기) 백업으로 복구한다.
-  await page.evaluate(() => localStorage.removeItem('ledger.data'))
-  await page.reload()
-  await expect(page.getByRole('heading', { level: 1, name: '설정' })).toBeVisible()
+  // 사용자는 복구 화면에서 손상된 원본을 따로 저장해 둔 뒤, 백업 파일로 복구한다(저장소를 직접 만질 필요 없음).
+  const [rawDownload] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '손상된 원본 데이터 저장' }).click()])
+  expect(readFileSync(await rawDownload.path(), 'utf-8')).toBe('{broken')
   await page.locator('input[type="file"]').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(backupText) })
-  await page.getByRole('dialog', { name: '백업으로 바꿀까요?' }).getByRole('button', { name: '바꾸기' }).click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('heading', { level: 1, name: '설정' })).toBeVisible()
   await goTo(page, '내역')
   await expect(page.getByRole('button', { name: /보호할 내역/ })).toContainText('-9,000원')
 })

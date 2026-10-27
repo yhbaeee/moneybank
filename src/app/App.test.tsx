@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from './App'
@@ -22,7 +22,8 @@ describe('App 접근성', () => {
     window.history.pushState({}, '', '/transactions')
     render(<App />)
     await screen.findByRole('heading', { level: 1, name: '내역' })
-    expect(document.title).toBe('내역 · 가계부')
+    // 문서 제목은 effect에서 설정되므로 화면 렌더와 한 틱 어긋날 수 있다.
+    await waitFor(() => expect(document.title).toBe('내역 · 가계부'))
     expect(document.body).toHaveFocus()
   })
 
@@ -32,7 +33,7 @@ describe('App 접근성', () => {
     render(<App />)
     await screen.findByRole('heading', { level: 1, name: '홈' })
     await user.click(screen.getAllByRole('link', { name: '설정' })[0])
-    expect(document.title).toBe('설정 · 가계부')
+    await waitFor(() => expect(document.title).toBe('설정 · 가계부'))
     expect(screen.getByRole('heading', { level: 1, name: '설정' })).toHaveFocus()
   })
 })

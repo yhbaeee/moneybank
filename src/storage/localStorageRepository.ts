@@ -19,18 +19,52 @@ import {
   ValidationError,
 } from './errors'
 import { migrateToLatest } from './migrations'
-import type { LedgerRepository, TransactionQuery } from './repository'
+import type { LedgerRepository, StorageUsage, TransactionQuery } from './repository'
 import { validateLedgerData } from './schema'
 
 export const LEDGER_STORAGE_KEY = 'ledger.data'
 
 const MAX_CATEGORY_NAME_LENGTH = 20
 
+/**
+ * 브라우저가 허용하는 localStorage 상한(문자 수)을 보수적으로 잡은 값. 실측: Chromium·Firefox는 문자 수 기준 약 5.24M자.
+ * WebKit(Safari, iOS의 모든 브라우저)은 한글처럼 Latin-1 밖 문자가 하나라도 있으면 문자열 전체를 2바이트로 세어
+ * 한글이 들어간 우리 데이터에서는 약 2.62M자가 한계다.
+ */
+export const ESTIMATED_QUOTA_CHARS = 5_000_000
+export const WEBKIT_ESTIMATED_QUOTA_CHARS = 2_500_000
+
+/** navigator.vendor로 WebKit 계열(Safari, iOS 브라우저)을 구분해 그 환경의 상한 추정값을 돌려준다. */
+export function estimateQuotaChars(vendor: string = typeof navigator === 'undefined' ? '' : navigator.vendor): number {
+  return vendor.includes('Apple') ? WEBKIT_ESTIMATED_QUOTA_CHARS : ESTIMATED_QUOTA_CHARS
+}
+
 export interface LocalStorageRepositoryOptions {
   /** 저장소 접근 함수. 접근 자체가 실패할 수 있어 지연 평가한다. */
   getStorage?: () => Storage
   now?: () => string
   newId?: () => string
+  /** 저장 공간 상한(문자 수). 사용량 표시에만 쓰이며 기본값은 브라우저에 맞춘 estimateQuotaChars(). */
+  quotaChars?: number
+}
+
+/**
+ * 읽은 데이터는 캐시에서 여러 호출이 공유하므로 실수로 변경되지 않게 깊이 얼린다.
+ * 이미 얼려 있는 항목은 건너뛰므로 일부만 바뀐 문서를 다시 얼려도 비용이 작다.
+ */
+function freezeLedger(data: LedgerData): LedgerData {
+  for (const list of [data.members, data.categories, data.paymentMethods, data.transactions] as object[][]) {
+    if (!Object.isFrozen(list)) {
+      for (const item of list) {
+        if (Object.isFrozen(item)) continue
+        const tags = (item as { tags?: unknown }).tags
+        if (Array.isArray(tags)) Object.freeze(tags)
+        Object.freeze(item)
+      }
+      Object.freeze(list)
+    }
+  }
+  return Object.freeze(data)
 }
 
 function isQuotaError(error: unknown): boolean {
@@ -41,13 +75,18 @@ function isQuotaError(error: unknown): boolean {
 }
 
 /**
- * 문서 전체를 localStorage 키 하나에 저장하는 구현체. 매 호출마다 읽고 검증하며, 쓰기는 전체를 한 번에 저장한다.
- * 데이터가 손상되어 있으면 덮어쓰지 않고 StorageCorruptedError를 던진다.
+ * 문서 전체를 localStorage 키 하나에 저장하는 구현체. 쓰기는 전체를 한 번에 저장한다.
+ * 읽을 때는 저장된 원문이 직전과 같으면 파싱·검증 결과를 재사용한다. 다른 탭이 값을 바꾸면 원문이 달라져
+ * 자동으로 다시 읽으므로 최신 상태가 유지된다. 데이터가 손상되어 있으면 덮어쓰지 않고 StorageCorruptedError를 던진다.
  */
 export function createLocalStorageRepository(options: LocalStorageRepositoryOptions = {}): LedgerRepository {
   const getStorage = options.getStorage ?? (() => localStorage)
   const now = options.now ?? (() => new Date().toISOString())
   const newId = options.newId ?? (() => crypto.randomUUID())
+  const quotaChars = options.quotaChars ?? estimateQuotaChars()
+
+  /** 마지막으로 읽거나 쓴 원문과 그 파싱 결과 */
+  let cache: { text: string; data: LedgerData } | null = null
 
   function readText(): string | null {
     try {
@@ -57,10 +96,17 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
     }
   }
 
-  function write(data: LedgerData): void {
+  /**
+   * 문서 전체를 저장한다. data가 이 저장소가 만든 새 객체일 때만 cacheResult를 true로 둔다
+   * (호출자가 넘긴 객체를 얼리거나 공유하지 않기 위해).
+   */
+  function write(data: LedgerData, cacheResult = false): void {
     try {
-      getStorage().setItem(LEDGER_STORAGE_KEY, JSON.stringify(data))
+      const text = JSON.stringify(data)
+      getStorage().setItem(LEDGER_STORAGE_KEY, text)
+      cache = cacheResult ? { text, data: freezeLedger(data) } : null
     } catch (cause) {
+      cache = null
       if (isQuotaError(cause)) throw new StorageQuotaError('저장 공간이 부족합니다.', { cause })
       throw new StorageUnavailableError('브라우저 저장소를 사용할 수 없습니다.', { cause })
     }
@@ -69,9 +115,15 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
   /** 저장된 문서를 읽는다. 아직 저장된 적이 없으면 기본 데이터를 돌려주되 저장은 하지 않는다. */
   function read(): LedgerData {
     const text = readText()
-    if (text === null) return createSeedData()
+    if (text === null) {
+      cache = null
+      return createSeedData()
+    }
+    if (cache?.text === text) return cache.data
     try {
-      return validateLedgerData(migrateToLatest(JSON.parse(text)))
+      const data = freezeLedger(validateLedgerData(migrateToLatest(JSON.parse(text))))
+      cache = { text, data }
+      return data
     } catch (cause) {
       throw new StorageCorruptedError('저장된 데이터를 읽을 수 없습니다.', { cause })
     }
@@ -138,7 +190,7 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
           createdAt: timestamp,
           updatedAt: timestamp,
         }
-        write({ ...data, transactions: [...data.transactions, transaction] })
+        write({ ...data, transactions: [...data.transactions, transaction] }, true)
         return transaction
       },
 
@@ -154,14 +206,14 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
           createdAt: existing.createdAt,
           updatedAt: now(),
         }
-        write({ ...data, transactions: data.transactions.map((t) => (t.id === id ? updated : t)) })
+        write({ ...data, transactions: data.transactions.map((t) => (t.id === id ? updated : t)) }, true)
         return updated
       },
 
       async remove(id) {
         const data = read()
         if (!data.transactions.some((t) => t.id === id)) throw new NotFoundError('내역을 찾을 수 없습니다.')
-        write({ ...data, transactions: data.transactions.filter((t) => t.id !== id) })
+        write({ ...data, transactions: data.transactions.filter((t) => t.id !== id) }, true)
       },
     },
 
@@ -183,7 +235,7 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
           isProtected: false,
           sortOrder: sameType.reduce((max, c) => Math.max(max, c.sortOrder), 0) + 1,
         }
-        write({ ...data, categories: [...data.categories, category] })
+        write({ ...data, categories: [...data.categories, category] }, true)
         return category
       },
 
@@ -196,7 +248,7 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
           name: patch.name === undefined ? existing.name : checkCategoryName(data, patch.name, existing.type, id),
           color: patch.color ?? existing.color,
         }
-        write({ ...data, categories: data.categories.map((c) => (c.id === id ? updated : c)) })
+        write({ ...data, categories: data.categories.map((c) => (c.id === id ? updated : c)) }, true)
         return updated
       },
 
@@ -221,7 +273,7 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
             t.categoryId === id ? { ...t, categoryId: destination.id, updatedAt: timestamp } : t,
           )
         }
-        write({ ...data, transactions, categories: data.categories.filter((c) => c.id !== id) })
+        write({ ...data, transactions, categories: data.categories.filter((c) => c.id !== id) }, true)
       },
     },
 
@@ -247,6 +299,15 @@ export function createLocalStorageRepository(options: LocalStorageRepositoryOpti
 
     async reset() {
       write(createSeedData())
+    },
+
+    async exportRaw() {
+      return readText()
+    },
+
+    async getUsage(): Promise<StorageUsage> {
+      const text = readText()
+      return { usedChars: text === null ? 0 : text.length + LEDGER_STORAGE_KEY.length, limitChars: quotaChars }
     },
   }
 }

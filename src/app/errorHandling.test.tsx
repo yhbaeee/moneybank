@@ -227,14 +227,26 @@ describe('설정 화면 실패', () => {
 })
 
 describe('시작 시 저장소 문제', () => {
-  it('저장소를 읽을 수 없으면 안내 화면을 보여 준다', async () => {
+  it('저장소를 읽을 수 없으면 이 세션에서만 저장되는 임시 저장소로 계속 쓸 수 있고 경고를 계속 보여 준다', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError')
     })
-    window.history.pushState({}, '', '/')
+    const user = userEvent.setup()
+    window.history.pushState({}, '', '/transactions')
     render(<App />)
-    expect(await screen.findByRole('alert')).toHaveTextContent('브라우저 저장소를 사용할 수 없습니다.')
-    expect(screen.queryByRole('heading', { level: 1, name: '홈' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: '내역' })).toBeInTheDocument()
+    const banner = screen.getAllByRole('status').find((el) => el.textContent?.includes('창을 닫으면 입력한 내용이 사라집니다'))
+    expect(banner).toBeDefined()
+
+    // 내역을 입력하고 저장하면 이 세션 안에서는 그대로 보인다.
+    await user.click(screen.getAllByRole('button', { name: '내역 추가' })[0])
+    const dialog = screen.getByRole('dialog', { name: '내역 추가' })
+    await user.type(within(dialog).getByLabelText('금액'), '4500')
+    await user.type(within(dialog).getByLabelText('메모'), '임시 저장')
+    await user.click(within(dialog).getByRole('button', { name: '저장' }))
+    expect(await screen.findByRole('button', { name: /임시 저장/ })).toHaveTextContent('-4,500원')
+    // 실제 브라우저 저장소에는 아무것도 쓰지 않는다.
+    expect(localStorage.length).toBe(0)
   })
 
   it('저장된 데이터가 손상되었으면 원본을 보존하고 안내한다', async () => {

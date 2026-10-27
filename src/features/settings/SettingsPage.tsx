@@ -4,6 +4,7 @@ import { Card } from '../../components/Card'
 import { Select } from '../../components/Field'
 import { BackupSection } from './BackupSection'
 import { ResetSection } from './ResetSection'
+import { StorageUsageSection } from './StorageUsageSection'
 
 const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: 'system', label: '시스템 설정 따름' },
@@ -31,6 +32,7 @@ export function SettingsPage() {
           카테고리 관리
         </Link>
       </Card>
+      <StorageUsageSection />
       <BackupSection />
       <ResetSection />
     </section>
