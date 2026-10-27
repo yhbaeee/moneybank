@@ -7,7 +7,12 @@ interface ToastItem {
   tone: ToastTone
 }
 
-const TOAST_DURATION_MS = 4000
+/** 알림 표시 시간. 읽는 데 시간이 걸리는 사용자를 위해 넉넉하게 두고, 오류는 더 오래 보여 준다. */
+const TOAST_DURATION_MS: Record<ToastTone, number> = {
+  info: 6000,
+  success: 6000,
+  error: 10000,
+}
 
 const TONE_CLASS: Record<ToastTone, string> = {
   info: 'border-line',
@@ -23,7 +28,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = nextId.current++
     // 연속 저장 시 알림이 쌓여 화면을 가리지 않도록 최신 알림 하나만 보여 준다.
     setToasts([{ id, message, tone }])
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), TOAST_DURATION_MS)
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), TOAST_DURATION_MS[tone])
   }, [])
 
   const value = useMemo<ToastContextValue>(() => ({ showToast }), [showToast])

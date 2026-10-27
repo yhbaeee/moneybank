@@ -50,7 +50,7 @@ test.describe('월 이동', () => {
     await expect(thisMonth(page)).toBeDisabled()
   })
 
-  test('연도 경계를 넘어 이동한다 (12월 ↔ 1월)', async ({ page }) => {
+  test('연도 경계를 넘어 이동한다 (12월 ↔ 1월)', { tag: '@core' }, async ({ page }) => {
     await seedAcrossMonths(page)
     await next(page).click() // 11월
     await next(page).click() // 12월
@@ -78,7 +78,7 @@ test.describe('월 이동', () => {
     await expect(page.getByText('이 달의 내역이 없습니다')).toBeVisible()
   })
 
-  test('선택한 월은 홈과 내역 화면이 공유한다', async ({ page }) => {
+  test('선택한 월은 홈과 내역 화면이 공유한다', { tag: '@core' }, async ({ page }) => {
     await seedAcrossMonths(page)
     await prev(page).click()
     await expect(nav(page)).toContainText('2026년 9월')

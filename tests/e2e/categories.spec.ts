@@ -179,7 +179,7 @@ test.describe('삭제', () => {
     await expect(page.getByRole('heading', { level: 1, name: '카테고리 관리' })).toBeFocused()
   })
 
-  test('사용 중인 카테고리는 내역을 다른 카테고리로 옮겨야 삭제된다', async ({ page }) => {
+  test('사용 중인 카테고리는 내역을 다른 카테고리로 옮겨야 삭제된다', { tag: '@core' }, async ({ page }) => {
     await openList(page)
     await seedTransactions(page, [
       { amount: 10_000, date: '2026-10-10', categoryId: 'cat-expense-1', memo: '점심' },

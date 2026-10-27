@@ -20,8 +20,17 @@ describe('allocatePermille', () => {
     expect(allocatePermille([1, 2])).toEqual([333, 667])
   })
 
-  it('나머지가 같으면 금액이 큰 항목이, 그다음은 앞선 항목이 먼저 받는다', () => {
-    // 합계 6: 나머지가 모두 4로 같고 남는 몫은 2‰ → 금액이 큰 4가 먼저, 그다음 첫 번째 1
+  it('나머지가 같으면 금액이 큰 항목이 남는 몫을 먼저 받는다', () => {
+    // 합계 16: 5/16, 11/16 모두 나머지가 8로 같고 남는 몫은 1‰ → 금액이 큰 11이 받는다(입력 순서와 무관).
+    expect(allocatePermille([5, 11])).toEqual([312, 688])
+    expect(allocatePermille([11, 5])).toEqual([688, 312])
+    expect(allocatePermille([7, 9])).toEqual([437, 563])
+    // 나머지·금액이 모두 같을 때만 입력 순서가 앞선 항목이 먼저 받는다.
+    expect(allocatePermille([1, 1, 10])).toEqual([83, 83, 834])
+  })
+
+  it('나머지와 금액이 모두 같으면 입력 순서가 앞선 항목이 먼저 받는다', () => {
+    expect(allocatePermille([1, 1, 1])).toEqual([334, 333, 333])
     expect(allocatePermille([1, 4, 1])).toEqual([167, 667, 166])
   })
 

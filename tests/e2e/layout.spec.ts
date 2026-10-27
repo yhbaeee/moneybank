@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('레이아웃과 내비게이션', () => {
-  test('화면 간 이동이 가능하다', async ({ page }) => {
+  test('화면 간 이동이 가능하다', { tag: '@core' }, async ({ page }) => {
     await page.goto('/')
     const nav = page.getByRole('navigation', { name: '주 메뉴' })
     await expect(page.getByRole('heading', { level: 1, name: '홈' })).toBeVisible()
@@ -40,7 +40,7 @@ test.describe('레이아웃과 내비게이션', () => {
 })
 
 test.describe('테마', () => {
-  test('테마를 전환하고 새로고침 후에도 유지한다', async ({ page }) => {
+  test('테마를 전환하고 새로고침 후에도 유지한다', { tag: '@core' }, async ({ page }) => {
     await page.goto('/settings')
     const html = page.locator('html')
 

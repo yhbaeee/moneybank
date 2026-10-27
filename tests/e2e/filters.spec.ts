@@ -37,7 +37,7 @@ test.describe('기본 표시', () => {
 })
 
 test.describe('검색', () => {
-  test('메모로 검색한다', async ({ page }) => {
+  test('메모로 검색한다', { tag: '@core' }, async ({ page }) => {
     await search(page).fill('점심')
     await expect(rows(page)).toHaveCount(1)
     await expect(rows(page).first()).toContainText('점심 회식')
@@ -112,7 +112,7 @@ test.describe('필터', () => {
     await expect(rows(page)).toHaveCount(2)
   })
 
-  test('여러 조건은 AND로 결합한다', async ({ page }) => {
+  test('여러 조건은 AND로 결합한다', { tag: '@core' }, async ({ page }) => {
     await selectFilter(page, '유형', '지출')
     await selectFilter(page, '태그', '회사')
     await expect(rows(page)).toHaveCount(1)

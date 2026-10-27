@@ -23,6 +23,7 @@ async function prepareData(page: Page) {
   await seedTransactions(page, DATA)
 }
 
+/** 백업 파일을 내려받아 이름과 내용을 돌려준다. (일시적인 알림에는 의존하지 않는다.) */
 async function exportBackup(page: Page): Promise<{ fileName: string; text: string }> {
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -46,10 +47,16 @@ async function listSnapshot(page: Page) {
 }
 
 test.describe('내보내기', () => {
-  test('날짜가 들어간 JSON 파일을 내려받는다', async ({ page }) => {
+  test('날짜가 들어간 JSON 파일을 내려받는다', { tag: '@core' }, async ({ page }) => {
     await prepareData(page)
     await openSettings(page)
-    const { fileName, text } = await exportBackup(page)
+    const downloadStarted = page.waitForEvent('download')
+    await page.getByRole('button', { name: '백업 파일 내보내기' }).click()
+    // 알림은 몇 초 뒤 사라지므로 클릭 직후, 느린 파일 읽기보다 먼저 확인한다.
+    await expect(page.getByRole('status').filter({ hasText: '백업 파일을 내려받았습니다' })).toBeVisible()
+    const download = await downloadStarted
+    const fileName = download.suggestedFilename()
+    const text = readFileSync(await download.path(), 'utf-8')
     expect(fileName).toBe('가계부-백업-2026-10-27.json')
 
     const backup = JSON.parse(text)
@@ -60,7 +67,6 @@ test.describe('내보내기', () => {
     expect(backup.paymentMethods).toHaveLength(5)
     expect(backup.members).toHaveLength(1)
     expect(backup.theme).toBeUndefined() // 테마는 기기 설정이라 백업에 포함하지 않는다.
-    await expect(page.getByRole('status').filter({ hasText: '백업 파일을 내려받았습니다' })).toBeVisible()
   })
 
   test('데이터가 없어도 내보낼 수 있다', async ({ page }) => {
@@ -71,7 +77,7 @@ test.describe('내보내기', () => {
 })
 
 test.describe('내보내기 → 초기화 → 가져오기 왕복', () => {
-  test('복원 후 내역과 카테고리가 이전과 같다', async ({ page }) => {
+  test('복원 후 내역과 카테고리가 이전과 같다', { tag: '@core' }, async ({ page }) => {
     await prepareData(page)
 
     // 직접 만든 카테고리도 포함해 백업한다.

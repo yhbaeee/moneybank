@@ -36,7 +36,7 @@ async function barHeight(page: Page, month: string, series: 'income' | 'expense'
 }
 
 test.describe('카테고리별 도넛 차트', () => {
-  test('카테고리별 비율과 같은 수치를 표시한다', async ({ page }) => {
+  test('카테고리별 비율과 같은 수치를 표시한다', { tag: '@core' }, async ({ page }) => {
     await openHomeWithData(page)
     await expect(donut(page)).toHaveAttribute('aria-label', '카테고리별 지출 비율 도넛 차트: 식비 66.7%, 교통 33.3%')
     await expect(donut(page).locator('circle[data-category]')).toHaveCount(2)
@@ -85,7 +85,7 @@ test.describe('최근 6개월 추이 차트', () => {
     await expect(trend(page)).toContainText('10월')
   })
 
-  test('막대 높이가 금액에 비례한다', async ({ page }) => {
+  test('막대 높이가 금액에 비례한다', { tag: '@core' }, async ({ page }) => {
     await openHomeWithData(page)
     const sep = await barHeight(page, '2026-09', 'expense') // 40,000
     const jun = await barHeight(page, '2026-06', 'expense') // 20,000
@@ -99,6 +99,23 @@ test.describe('최근 6개월 추이 차트', () => {
     const incomeMax = await barHeight(page, '2026-10', 'income')
     expect(sep / incomeMax).toBeGreaterThan(0.39)
     expect(sep / incomeMax).toBeLessThan(0.41)
+    // 모든 막대는 같은 기준선(바닥)에서 시작한다. 위치가 어긋나 공중에 뜨는 막대가 없어야 한다.
+    const bottoms: number[] = []
+    for (const [month, series] of [
+      ['2026-05', 'expense'],
+      ['2026-06', 'income'],
+      ['2026-06', 'expense'],
+      ['2026-08', 'expense'],
+      ['2026-09', 'income'],
+      ['2026-09', 'expense'],
+      ['2026-10', 'income'],
+      ['2026-10', 'expense'],
+    ] as const) {
+      const box = await trend(page).locator(`g[data-month="${month}"] rect[data-series="${series}"]`).boundingBox()
+      bottoms.push(box!.y + box!.height)
+    }
+    expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThan(0.5)
+
     // 값이 없는 달의 막대는 높이 0이다.
     const emptyBar = trend(page).locator('g[data-month="2026-07"] rect[data-series="expense"]')
     await expect(emptyBar).toHaveAttribute('height', '0')

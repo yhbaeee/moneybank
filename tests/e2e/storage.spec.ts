@@ -7,7 +7,7 @@ async function readStored(page: Page) {
 }
 
 test.describe('저장소 시드', () => {
-  test('최초 진입 시 기본 데이터가 저장되고 새로고침해도 다시 쓰지 않는다', async ({ page }) => {
+  test('최초 진입 시 기본 데이터가 저장되고 새로고침해도 다시 쓰지 않는다', { tag: '@core' }, async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('heading', { level: 1, name: '홈' })).toBeVisible()
 
@@ -25,7 +25,7 @@ test.describe('저장소 시드', () => {
     expect(await readStored(page)).toBe(first)
   })
 
-  test('손상된 데이터는 안내를 표시하고 덮어쓰지 않는다', async ({ page }) => {
+  test('손상된 데이터는 안내를 표시하고 덮어쓰지 않는다', { tag: '@core' }, async ({ page }) => {
     await page.addInitScript((key) => localStorage.setItem(key, '{broken'), KEY)
     await page.goto('/')
     await expect(page.getByRole('alert')).toContainText('손상')

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -86,6 +86,54 @@ describe('Input 설명 연결', () => {
     render(<Input label="금액" hint="원 단위 정수" />)
     expect(screen.getByLabelText('금액')).toHaveAccessibleDescription('원 단위 정수')
     expect(screen.getByLabelText('금액')).not.toHaveAttribute('aria-invalid')
+  })
+})
+
+describe('Toast 표시 시간', () => {
+  function Buttons() {
+    const { showToast } = useToast()
+    return (
+      <>
+        <button onClick={() => showToast('성공', 'success')}>성공</button>
+        <button onClick={() => showToast('오류', 'error')}>오류</button>
+      </>
+    )
+  }
+
+  it('성공 알림은 6초, 오류 알림은 10초 동안 보인 뒤 사라진다', () => {
+    vi.useFakeTimers()
+    try {
+      render(
+        <ToastProvider>
+          <Buttons />
+        </ToastProvider>,
+      )
+      fireEvent.click(screen.getByRole('button', { name: '성공' }))
+      act(() => void vi.advanceTimersByTime(5999))
+      expect(screen.getByText('성공', { selector: 'div' })).toBeInTheDocument()
+      act(() => void vi.advanceTimersByTime(2))
+      expect(screen.queryByText('성공', { selector: 'div' })).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: '오류' }))
+      act(() => void vi.advanceTimersByTime(9999))
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+      act(() => void vi.advanceTimersByTime(2))
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('새 알림이 오면 이전 알림 대신 최신 알림 하나만 보여 준다', () => {
+    render(
+      <ToastProvider>
+        <Buttons />
+      </ToastProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: '성공' }))
+    fireEvent.click(screen.getByRole('button', { name: '오류' }))
+    expect(screen.queryByText('성공', { selector: 'div' })).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('오류')
   })
 })
 

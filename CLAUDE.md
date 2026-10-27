@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-- 단계 9(카테고리 관리·JSON 백업) 구현 완료(승인 대기). 구현은 `docs/DEVELOPMENT_PLAN.md`의 11단계 순서대로 진행한다.
-- 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록, 필요 시 생성).
-- 아래 "명령어"와 "폴더 구조"는 1단계에서 확정될 계획이다. **단계 구현 후 실제 상태에 맞게 이 파일을 갱신한다.**
+- 단계 10(테스트 보강) 구현 완료(승인 대기). 남은 것: 단계 11(성능·오류 처리·최종 정리). 구현은 `docs/DEVELOPMENT_PLAN.md`의 단계 순서대로 진행한다(단계 8이 둘로 나뉘어 총 11단계).
+- 기준 문서: `docs/PRD.md`(무엇을 만들 것인가, v1.0 승인), `docs/DEVELOPMENT_PLAN.md`(어떻게/순서), `docs/ISSUES.md`(발견된 문제 기록), `docs/TESTING.md`(테스트 가이드·요구 추적표·변이 점검).
+- 구현 후에는 이 파일을 실제 상태에 맞게 갱신한다.
 
 ## 프로젝트 목적
 
@@ -14,18 +14,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 기술 스택
 
-React + TypeScript(strict) + Vite, Tailwind CSS(다크 모드는 class 전략), React Router, 상태관리는 React Context + 커스텀 훅(외부 상태 라이브러리 없음), Vitest + React Testing Library, Playwright(E2E), 저장은 localStorage(저장소 인터페이스 뒤에 숨김). 차트 방식(직접 SVG vs 라이브러리)은 7단계에서 결정.
+React + TypeScript(strict) + Vite, Tailwind CSS(다크 모드는 class 전략), React Router, 상태관리는 React Context + 커스텀 훅(외부 상태 라이브러리 없음), Vitest + React Testing Library, Playwright(E2E, Chromium 전체 + Firefox/WebKit 핵심), 저장은 localStorage(저장소 인터페이스 뒤에 숨김), 차트는 직접 SVG.
 
-## 명령어 (단계 1에서 검증 완료)
+## 명령어
 
 ```
-npm run dev          # 개발 서버
-npm run build        # 프로덕션 빌드
-npm run typecheck    # tsc
-npm run lint         # oxlint (Vite 템플릿 기본, ESLint 아님)
-npm run test         # Vitest (단일 파일: npx vitest run src/domain/money.test.ts, 이름: -t "패턴")
-npm run test:e2e     # Playwright, desktop+mobile(Pixel 7) 프로젝트, dev 서버 자동 기동 (단일 파일: npx playwright test tests/e2e/x.spec.ts, 디버그: --ui)
+npm run dev              # 개발 서버
+npm run build            # 프로덕션 빌드
+npm run typecheck        # tsc
+npm run lint             # oxlint (Vite 템플릿 기본, ESLint 아님)
+npm run test             # Vitest (단일 파일: npx vitest run src/domain/money.test.ts, 이름: -t "패턴")
+npm run test:coverage    # 커버리지 + 기준 강제(전체 85%, domain·storage 95/분기 90)
+npm run test:e2e         # Playwright 전체 프로젝트(dev 서버 자동 기동, 127.0.0.1:5173) (단일: npx playwright test tests/e2e/x.spec.ts --project=desktop, 디버그: --ui)
+npm run test:e2e:chromium  # desktop + mobile(Pixel 7), 전체 시나리오
+npm run test:e2e:cross     # firefox + webkit + mobile-safari, @core 태그 시나리오만
+npm run test:a11y        # axe + 접근성 동작 테스트
+npm run test:all         # typecheck → lint → coverage → build → E2E
 ```
+
+처음 한 번 `npx playwright install chromium firefox webkit`. 테스트 작성 규칙·요구 추적표·변이 점검 방법은 `docs/TESTING.md`.
 
 ## 아키텍처
 
@@ -48,6 +55,16 @@ tests/e2e/      Playwright
 - 백업: 내보내기는 `createBackup`+`serializeBackup`+`downloadTextFile`(파일명 `가계부-백업-YYYY-MM-DD.json`), 가져오기는 `parseBackup`으로 **검증 → 확인 대화상자 → 전체 교체**(병합 없음). 검증 실패 시 기존 데이터는 절대 바꾸지 않고 문제 목록(최대 5개)을 `role="alert"`로 보여 준다. 파일은 10MB 상한. 테마는 기기 설정이라 백업·초기화 대상이 아니다.
 - jsdom 테스트에서는 `vi.mock('../../app/download')`로 다운로드를 막는다. E2E는 `page.waitForEvent('download')`와 `locator('input[type="file"]').setInputFiles(...)`(입력은 숨김 상태)를 쓴다.
 - 새 화면·대화상자는 `a11y.spec.ts`에 케이스를 추가한다(이 단계에서 설정·카테고리 화면과 모든 대화상자를 추가함).
+
+## 테스트 (단계 10)
+
+- 상세는 `docs/TESTING.md`. 핵심만: **커버리지 기준은 `vite.config.ts`가 강제**(전체 85%, `domain`·`storage` 95/분기 90). 새 순수 로직에는 경계값 테스트를 함께 추가한다.
+- E2E의 대표 흐름에는 `{ tag: '@core' }`를 붙인다(Firefox·WebKit·iPhone 에뮬레이션에서도 실행). 전체 시나리오는 Chromium(desktop·mobile)만.
+- `playwright.config.ts`의 서버 주소는 `127.0.0.1`로 고정(IPv6 `localhost` 문제로 Firefox가 간헐 실패했음). `retries`는 0 — 간헐 실패는 재시도로 가리지 말고 원인을 고친다. 워커 수는 기본값(코어의 절반)을 넘기지 않는다(과부하 시 Firefox/WebKit 시간 초과). 새 런타임 의존성을 추가하면 `vite.config.ts`의 `optimizeDeps.include`에도 넣는다(실행 중 재번들로 페이지가 새로고침되는 것을 막음).
+- 알림(토스트)은 성공 6초·오류 10초 뒤 사라진다. E2E에서 알림을 단언할 때는 클릭 직후, 느린 작업(파일 읽기 등)보다 먼저 확인한다.
+- 테스트가 통과하는 것과 버그를 잡는 것은 다르다. 핵심 로직을 바꾼 뒤에는 일부러 버그를 넣어 테스트가 실패하는지 확인한다(`docs/TESTING.md`의 변이 점검). 선택지를 직접 고르는 테스트는 "기본값으로 저장" 시나리오를 함께 둔다(버그를 가린 전례: ISS-016).
+- 저장소 실패·다른 탭에서 바뀐 데이터는 `Storage.prototype` 가로채기/별도 저장소 인스턴스로 흉내 낸다(`src/app/errorHandling.test.tsx`).
+- `migrateToLatest`는 `{ currentVersion, migrations }`를 주입할 수 있다. 스키마 버전을 올릴 때 이 구조로 마이그레이션 체인을 테스트한다.
 
 ## 접근성 (단계 8)
 

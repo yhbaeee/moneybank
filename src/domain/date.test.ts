@@ -35,6 +35,36 @@ describe('윤년과 월의 일수', () => {
   })
 })
 
+describe('월별 일수 전체 검증', () => {
+  // [월, 평년 일수, 윤년 일수]
+  const MONTHS: [number, number, number][] = [
+    [1, 31, 31],
+    [2, 28, 29],
+    [3, 31, 31],
+    [4, 30, 30],
+    [5, 31, 31],
+    [6, 30, 30],
+    [7, 31, 31],
+    [8, 31, 31],
+    [9, 30, 30],
+    [10, 31, 31],
+    [11, 30, 30],
+    [12, 31, 31],
+  ]
+
+  it.each(MONTHS)('%d월: 평년 %d일, 윤년 %d일', (month, common, leap) => {
+    expect(daysInMonth(2026, month)).toBe(common)
+    expect(daysInMonth(2024, month)).toBe(leap)
+  })
+
+  it.each(MONTHS)('%d월: 마지막 날은 유효하고 그 다음 날은 무효이다', (month, common) => {
+    const mm = String(month).padStart(2, '0')
+    expect(isValidDateString(`2026-${mm}-${String(common).padStart(2, '0')}`)).toBe(true)
+    expect(isValidDateString(`2026-${mm}-${String(common + 1).padStart(2, '0')}`)).toBe(false)
+    expect(monthEnd(asMonthString(`2026-${mm}`))).toBe(`2026-${mm}-${String(common).padStart(2, '0')}`)
+  })
+})
+
 describe('isValidDateString', () => {
   it('실제로 존재하는 날짜만 허용한다', () => {
     expect(isValidDateString('2026-10-27')).toBe(true)

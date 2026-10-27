@@ -72,6 +72,28 @@ describe('내역 등록·수정·삭제 흐름', () => {
     expect(await screen.findByText('+3,000,000원')).toBeInTheDocument()
   })
 
+  it('유형만 바꾸고 카테고리를 건드리지 않아도 그 유형의 첫 카테고리로 저장된다', async () => {
+    const user = userEvent.setup()
+    await openTransactions()
+    const dialog = await openCreateForm(user)
+
+    await user.click(within(dialog).getByRole('radio', { name: '수입' }))
+    expect(within(dialog).getByLabelText('카테고리')).toHaveValue('cat-income-1')
+    await user.type(within(dialog).getByLabelText('금액'), '70000')
+    await user.click(within(dialog).getByRole('button', { name: '저장' }))
+    const income = await screen.findByRole('button', { name: /급여/ })
+    expect(income).toHaveTextContent('+70,000원')
+
+    // 다시 지출로 돌려도 지출 카테고리로 돌아간다.
+    const second = await openCreateForm(user)
+    await user.click(within(second).getByRole('radio', { name: '수입' }))
+    await user.click(within(second).getByRole('radio', { name: '지출' }))
+    expect(within(second).getByLabelText('카테고리')).toHaveValue('cat-expense-1')
+    await user.type(within(second).getByLabelText('금액'), '1000')
+    await user.click(within(second).getByRole('button', { name: '저장' }))
+    expect(await screen.findByRole('button', { name: /식비/ })).toHaveTextContent('-1,000원')
+  })
+
   it.each([
     ['', '금액을 입력해 주세요.'],
     ['0', '금액은 1원 이상이어야 합니다.'],

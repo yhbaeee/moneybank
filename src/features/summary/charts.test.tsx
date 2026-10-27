@@ -69,6 +69,15 @@ describe('TrendChart', () => {
     expect(height('2026-10', 'income')).toBeGreaterThan(height('2026-09', 'income'))
   })
 
+  it('0이 아닌 모든 막대의 바닥이 같은 기준선에 정렬된다', () => {
+    const { container } = render(<TrendChart data={data} selectedMonth={asMonthString('2026-10')} />)
+    const bottoms = [...container.querySelectorAll('rect[data-series]')]
+      .filter((rect) => Number(rect.getAttribute('height')) > 0)
+      .map((rect) => (Number(rect.getAttribute('y')) + Number(rect.getAttribute('height'))).toFixed(6))
+    expect(bottoms.length).toBeGreaterThan(3)
+    expect(new Set(bottoms).size).toBe(1)
+  })
+
   it('값이 아주 작아도 0이 아니면 최소 높이로 보인다', () => {
     const tiny: MonthlyTotal[] = [{ month: asMonthString('2026-10'), income: 1, expense: 9_999_999_999 }]
     const { container } = render(<TrendChart data={tiny} selectedMonth={asMonthString('2026-10')} />)

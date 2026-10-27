@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test.describe('내역 등록', () => {
-  test('지출 내역을 추가할 수 있다', async ({ page }) => {
+  test('지출 내역을 추가할 수 있다', { tag: '@core' }, async ({ page }) => {
     await openList(page)
     await expect(page.getByText('이 달의 내역이 없습니다')).toBeVisible()
 
@@ -32,7 +32,7 @@ test.describe('내역 등록', () => {
     await expect(row).toContainText('#회사')
   })
 
-  test('수입 내역을 추가할 수 있다', async ({ page }) => {
+  test('수입 내역을 추가할 수 있다', { tag: '@core' }, async ({ page }) => {
     await openList(page)
     await page.getByRole('button', { name: '내역 추가' }).click()
     const dialog = page.getByRole('dialog', { name: '내역 추가' })
@@ -44,6 +44,37 @@ test.describe('내역 등록', () => {
     const row = page.getByRole('button', { name: /10월 급여/ })
     await expect(row).toContainText('+3,000,000원')
     await expect(row).toContainText('급여')
+  })
+
+  test('금액만 입력해도 오늘 날짜·기본 카테고리·기본 결제수단으로 저장된다', { tag: '@core' }, async ({ page }) => {
+    await openList(page)
+    await page.getByRole('button', { name: '내역 추가' }).click()
+    const dialog = page.getByRole('dialog', { name: '내역 추가' })
+    await dialog.getByLabel('금액').fill('4500')
+    await dialog.getByRole('button', { name: '저장' }).click()
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: '10월 27일 (화)' })).toBeVisible()
+    const row = page.getByRole('listitem').first()
+    await expect(row).toContainText('식비')
+    await expect(row).toContainText('현금')
+    await expect(row).toContainText('-4,500원')
+  })
+
+  test('유형만 바꾸고 카테고리는 고르지 않아도 그 유형의 첫 카테고리로 저장된다', async ({ page }) => {
+    await openList(page)
+    await page.getByRole('button', { name: '내역 추가' }).click()
+    const dialog = page.getByRole('dialog', { name: '내역 추가' })
+    await dialog.getByRole('radio', { name: '수입' }).check()
+    await expect(dialog.getByLabel('카테고리')).toHaveValue('cat-income-1')
+    await dialog.getByLabel('금액').fill('70000')
+    await dialog.getByLabel('날짜').fill('2026-10-05')
+    await dialog.getByRole('button', { name: '저장' }).click()
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    const row = page.getByRole('listitem').first()
+    await expect(row).toContainText('급여')
+    await expect(row).toContainText('+70,000원')
   })
 
   test('금액 입력을 포커스를 잃을 때 쉼표로 정리한다', async ({ page }) => {
@@ -91,7 +122,7 @@ test.describe('입력값 검증', () => {
     await expect(dialog.getByRole('alert')).toContainText('올바른 날짜')
   })
 
-  test('오류를 고치면 저장할 수 있다', async ({ page }) => {
+  test('오류를 고치면 저장할 수 있다', { tag: '@core' }, async ({ page }) => {
     await openList(page)
     await page.getByRole('button', { name: '내역 추가' }).click()
     const dialog = await fillForm(page, { amount: '0', date: '2026-10-27', memo: '재시도' })
@@ -106,7 +137,7 @@ test.describe('입력값 검증', () => {
 })
 
 test.describe('수정과 삭제', () => {
-  test('내역을 수정할 수 있다', async ({ page }) => {
+  test('내역을 수정할 수 있다', { tag: '@core' }, async ({ page }) => {
     await openList(page)
     await addTransaction(page, { amount: '12000', date: '2026-10-27', category: '식비', memo: '점심' })
 
@@ -130,7 +161,7 @@ test.describe('수정과 삭제', () => {
     await expect(page.getByRole('heading', { name: '10월 27일 (화)' })).toHaveCount(0)
   })
 
-  test('삭제 확인에서 취소하면 유지하고 확인하면 삭제한다', async ({ page }) => {
+  test('삭제 확인에서 취소하면 유지하고 확인하면 삭제한다', { tag: '@core' }, async ({ page }) => {
     await openList(page)
     await addTransaction(page, { amount: '12000', date: '2026-10-27', memo: '점심' })
     await addTransaction(page, { amount: '5000', date: '2026-10-27', memo: '커피' })
@@ -166,7 +197,7 @@ test.describe('수정과 삭제', () => {
 })
 
 test.describe('데이터 유지', () => {
-  test('새로고침 후에도 내역이 유지되고 날짜 내림차순으로 표시된다', async ({ page }) => {
+  test('새로고침 후에도 내역이 유지되고 날짜 내림차순으로 표시된다', { tag: '@core' }, async ({ page }) => {
     await openList(page)
     await addTransaction(page, { amount: '1000', date: '2026-10-01', memo: '첫날' })
     await addTransaction(page, { amount: '2000', date: '2026-10-31', memo: '말일' })

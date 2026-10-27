@@ -24,7 +24,7 @@ test.describe('월별 요약', () => {
     await expect(page.getByText('이 달의 내역이 없습니다')).toBeVisible()
   })
 
-  test('이번 달 내역만 집계하고 이웃 달은 제외한다', async ({ page }) => {
+  test('이번 달 내역만 집계하고 이웃 달은 제외한다', { tag: '@core' }, async ({ page }) => {
     await openHome(page)
     await addTransaction(page, { type: 'income', amount: '3,000,000', date: '2026-10-25', category: '급여' })
     await addTransaction(page, { amount: '12,000', date: '2026-10-27', category: '식비' })
@@ -74,7 +74,7 @@ test.describe('월별 요약', () => {
 })
 
 test.describe('카테고리별 집계', () => {
-  test('비율 합이 항상 100.0%가 되도록 나눈다 (3등분)', async ({ page }) => {
+  test('비율 합이 항상 100.0%가 되도록 나눈다 (3등분)', { tag: '@core' }, async ({ page }) => {
     await openHome(page)
     await addTransaction(page, { amount: '1,000', date: '2026-10-10', category: '식비' })
     await addTransaction(page, { amount: '1,000', date: '2026-10-11', category: '교통' })
@@ -96,7 +96,7 @@ test.describe('카테고리별 집계', () => {
 })
 
 test.describe('변경 후 갱신', () => {
-  test('수정하면 요약과 집계가 즉시 갱신된다', async ({ page }) => {
+  test('수정하면 요약과 집계가 즉시 갱신된다', { tag: '@core' }, async ({ page }) => {
     await openHome(page)
     await addTransaction(page, { amount: '10,000', date: '2026-10-10', category: '식비', memo: '점심' })
     await addTransaction(page, { amount: '5,000', date: '2026-10-11', category: '교통', memo: '버스' })

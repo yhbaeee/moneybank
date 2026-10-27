@@ -264,6 +264,28 @@ describe('저장소 오류', () => {
     await expect(quotaRepo.transactions.create(expense())).rejects.toBeInstanceOf(StorageQuotaError)
   })
 
+  it('용량 초과가 아닌 쓰기 실패는 StorageUnavailableError로 변환하고 기존 데이터를 보존한다', async () => {
+    const readonly = createMemoryStorage()
+    const readonlyRepo = makeRepo(readonly)
+    await readonlyRepo.init()
+    const before = readonly.getItem(LEDGER_STORAGE_KEY)
+    readonly.setItem = () => {
+      throw new DOMException('denied', 'SecurityError')
+    }
+    await expect(readonlyRepo.transactions.create(expense())).rejects.toBeInstanceOf(StorageUnavailableError)
+    expect(readonly.getItem(LEDGER_STORAGE_KEY)).toBe(before)
+  })
+
+  it('읽기 중 저장소 예외도 StorageUnavailableError로 변환한다', async () => {
+    const flaky = createMemoryStorage()
+    const flakyRepo = makeRepo(flaky)
+    await flakyRepo.init()
+    flaky.getItem = () => {
+      throw new Error('boom')
+    }
+    await expect(flakyRepo.transactions.list()).rejects.toBeInstanceOf(StorageUnavailableError)
+  })
+
   it('저장소 접근이 막혀 있으면 StorageUnavailableError로 변환한다', async () => {
     const blocked = createLocalStorageRepository({
       getStorage: () => {
